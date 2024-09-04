@@ -1,4 +1,4 @@
-import express, { Router } from 'express';
+/*import express, { Router } from 'express';
 import serverless from 'serverless-http';
 import jwt from 'jsonwebtoken';
 import morgan from 'morgan';
@@ -117,11 +117,10 @@ router.get('/users', (req, res) => {
 
 api.use('/api/', router);
 
-export const handler = serverless(api);
+export const handler = serverless(api);*/
 
 
 
-/*
 import express, { Router } from "express";
 import serverless from "serverless-http";
 
@@ -132,4 +131,4 @@ router.get("/hello", (req, res) => res.send("Hello World!"));
 
 api.use("/api/", router);
 
-export const handler = serverless(api);*/
+export const handler = serverless(api);
