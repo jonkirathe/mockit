@@ -224,7 +224,7 @@ router.post('/refresh', (req, res) => {
 });
 
 router.get('/check', (req, res) => {
-    res.status(200).send({ body: 'All working' });
+    res.status(200).json(JSON.stringify('All working'));
 });
 
 router.get('/users', (req, res) => {
