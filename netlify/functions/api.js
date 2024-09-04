@@ -6,7 +6,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import { Server } from 'socket.io';
 import http from 'http';
-import { swaggerOptions } from 'swaggerConfig.js';
+import { swaggerOptions } from 'netlify/functions/swaggerConfig.js';
 
 const index = express();
 const port = 3500;
