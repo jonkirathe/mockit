@@ -122,10 +122,10 @@ export const handler = serverless(api);*/
 
 import express, { Router } from "express";
 import serverless from "serverless-http";
-import jwt from 'jsonwebtoken';
-// import swaggerJsdoc from 'swagger-jsdoc';
-// import { swaggerOptions } from './swaggerConfig.js';
-// import swaggerUi from "swagger-ui-express";
+// import jwt from 'jsonwebtoken';
+import swaggerJsdoc from 'swagger-jsdoc';
+import { swaggerOptions } from './swaggerConfig.js';
+import swaggerUi from "swagger-ui-express";
 
 const api = express();
 
@@ -136,18 +136,18 @@ const users = [
     { id: 1, email: 'user@example.com', password: 'password', role: 'user' },
 ];
 
-const SECRET_KEY = 'vW8nF/bLKidnpIHC2ngYZNbdOe+tbFcoZ7muV0vCRYk=';
+/*const SECRET_KEY = 'vW8nF/bLKidnpIHC2ngYZNbdOe+tbFcoZ7muV0vCRYk=';
 const REFRESH_SECRET_KEY = '3cN5xXHOsKhB7qxoDzWQcEMrtR0DZ6leTrkyHYOqIro=';
 
 const generateTokens = (user) => {
     const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role }, SECRET_KEY, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
     return { accessToken, refreshToken };
-};
+};*/
 
 // Swagger setup
-// const specs = swaggerJsdoc(swaggerOptions);
-// api.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+const specs = swaggerJsdoc(swaggerOptions);
+api.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 router.get('/check', (req, res) => {
     res.status(200).json({ message: 'All working' });
