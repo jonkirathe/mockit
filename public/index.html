@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockit Server</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = io();
+            const logContainer = document.getElementById('log-container');
+
+            socket.on('log', (message) => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.textContent = message;
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            });
+        });
+    </script>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Welcome to the Mockit Server</h1>
+        <p>This is an open-source Mockit server that can be used by developers to simulate API endpoints for testing and development purposes.</p>
+        <p>For interactive API documentation, visit the <a href="/api-docs" target="_blank">Swagger API Documentation</a>.</p>
+    </header>
+    <main>
+        <section>
+            <h2>About This Project</h2>
+            <p>This Mockit server provides a simple and flexible way to create and manage Mockit API endpoints. It supports authentication, token refresh, and user management, making it ideal for testing and development.</p>
+            <p>Key Features:</p>
+            <ul>
+                <li>Easy to set up and use</li>
+                <li>Supports JWT authentication</li>
+                <li>Real-time request logging</li>
+                <li>Interactive API documentation with Swagger UI</li>
+            </ul>
+            <p>We encourage developers to contribute to this project and help make it even better. Your contributions can help add new features, improve existing functionality, and fix bugs.</p>
+            <p>Check out the project on GitHub and join our community:</p>
+            <p><a href="https://github.com/your-repo/mock-server" target="_blank">GitHub Repository</a></p>
+            <p>Let's collaborate and make this project grow!</p>
+        </section>
+        <section>
+            <div id="log-container" class="log-container">
+                <h2>Request Logs</h2>
+            </div>
+        </section>
+    </main>
+    <footer>
+        <p>© 2024 Mockit Server. All rights reserved.</p>
+    </footer>
+</div>
+</body>
+</html>
