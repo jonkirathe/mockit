@@ -329,9 +329,9 @@ api.get('/api/users', (req, res) => {
     res.status(200).json({ users });
 });
 
-router.get("/hello", (req, res) =>
+api.get("/hello", (req, res) =>
     res.send("Hello World!"));
 
-api.use("/api/", router);
+// api.use("/api/", router);
 
 export const handler = serverless(api);
