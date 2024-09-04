@@ -1,3 +1,4 @@
+/*
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import morgan from 'morgan';
@@ -44,7 +45,7 @@ const generateTokens = (user) => {
 const specs = swaggerJsdoc(swaggerOptions);
 index.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
-/**
+/!**
  * @swagger
  * /api/signin:
  *   post:
@@ -65,7 +66,7 @@ index.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
  *         description: Successful sign in
  *       401:
  *         description: Invalid email or password
- */
+ *!/
 index.post('/api/signin', (req, res) => {
   const { email, password } = req.body;
   const user = users.find((u) => u.email === email && u.password === password);
@@ -78,7 +79,7 @@ index.post('/api/signin', (req, res) => {
   }
 });
 
-/**
+/!**
  * @swagger
  * /api/signup:
  *   post:
@@ -99,7 +100,7 @@ index.post('/api/signin', (req, res) => {
  *         description: User created successfully
  *       409:
  *         description: User already exists
- */
+ *!/
 index.post('/api/signup', (req, res) => {
   const { email, password } = req.body;
   const userExists = users.some((u) => u.email === email);
@@ -114,7 +115,7 @@ index.post('/api/signup', (req, res) => {
   }
 });
 
-/**
+/!**
  * @swagger
  * /api/user:
  *   get:
@@ -128,7 +129,7 @@ index.post('/api/signup', (req, res) => {
  *         description: Invalid token
  *       404:
  *         description: User not found
- */
+ *!/
 index.get('/api/user', (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -149,7 +150,7 @@ index.get('/api/user', (req, res) => {
   }
 });
 
-/**
+/!**
  * @swagger
  * /api/refresh:
  *   post:
@@ -168,7 +169,7 @@ index.get('/api/user', (req, res) => {
  *         description: Token refreshed successfully
  *       401:
  *         description: Invalid refresh token
- */
+ *!/
 index.post('/api/refresh', (req, res) => {
   const { refreshToken } = req.body;
   try {
@@ -185,7 +186,7 @@ index.post('/api/refresh', (req, res) => {
   }
 });
 
-/**
+/!**
  * @swagger
  * /api/check:
  *   get:
@@ -193,12 +194,12 @@ index.post('/api/refresh', (req, res) => {
  *     responses:
  *       200:
  *         description: Server is working
- */
+ *!/
 index.get('/api/check', (req, res) => {
   res.status(200).json({ message: 'All working' });
 });
 
-/**
+/!**
  * @swagger
  * /api/users:
  *   get:
@@ -206,7 +207,7 @@ index.get('/api/check', (req, res) => {
  *     responses:
  *       200:
  *         description: List of users retrieved successfully
- */
+ *!/
 index.get('/api/users', (req, res) => {
   res.status(200).json({ users });
 });
@@ -214,3 +215,17 @@ index.get('/api/users', (req, res) => {
 server.listen(port, () => {
   console.log(`Mock API server running at http://localhost:${port}`);
 });
+*/
+
+
+import express, { Router } from "express";
+import serverless from "serverless-http";
+
+const api = express();
+
+const router = Router();
+router.get("/hello", (req, res) => res.send("Hello World!"));
+
+api.use("/api/", router);
+
+export const handler = serverless(api);
