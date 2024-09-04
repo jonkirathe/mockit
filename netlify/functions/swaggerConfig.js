@@ -1,8 +1,8 @@
-// import path from 'path';
-// import { fileURLToPath } from 'url';
-//
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const swaggerOptions = {
     swaggerDefinition: {
@@ -14,7 +14,7 @@ export const swaggerOptions = {
         },
         servers: [
             {
-                url: 'http://localhost:3500',
+                url: 'https://mockit-server.netlify.app',
             },
         ],
         components: {
@@ -32,6 +32,6 @@ export const swaggerOptions = {
             },
         ],
     },
-    apis: ['./api.js'], // Path to the API docs
+    apis: [path.join(__dirname, './api.js')], // Path to the API docs
     // apis: ['./routes/*.js'], // Path to the API docs
 };
