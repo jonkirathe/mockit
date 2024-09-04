@@ -6,7 +6,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import { Server } from 'socket.io';
 import http from 'http';
-import { swaggerOptions } from 'netlify/functions/swaggerConfig.js';
+import { swaggerOptions } from 'swaggerConfig.js';
 
 const index = express();
 const port = 3500;
@@ -66,7 +66,7 @@ index.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
  *       401:
  *         description: Invalid email or password
  */
-index.post('/api/signin', (req, res) => {
+index.post('/signin', (req, res) => {
   const { email, password } = req.body;
   const user = users.find((u) => u.email === email && u.password === password);
 
@@ -100,7 +100,7 @@ index.post('/api/signin', (req, res) => {
  *       409:
  *         description: User already exists
  */
-index.post('/api/signup', (req, res) => {
+index.post('/signup', (req, res) => {
   const { email, password } = req.body;
   const userExists = users.some((u) => u.email === email);
 
@@ -129,7 +129,7 @@ index.post('/api/signup', (req, res) => {
  *       404:
  *         description: User not found
  */
-index.get('/api/user', (req, res) => {
+index.get('/user', (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).json({ message: 'Authorization header is missing' });
@@ -169,7 +169,7 @@ index.get('/api/user', (req, res) => {
  *       401:
  *         description: Invalid refresh token
  */
-index.post('/api/refresh', (req, res) => {
+index.post('/refresh', (req, res) => {
   const { refreshToken } = req.body;
   try {
     const decoded = jwt.verify(refreshToken, REFRESH_SECRET_KEY);
@@ -194,7 +194,7 @@ index.post('/api/refresh', (req, res) => {
  *       200:
  *         description: Server is working
  */
-index.get('/api/check', (req, res) => {
+index.get('/check', (req, res) => {
   res.status(200).json({ message: 'All working' });
 });
 
