@@ -1,8 +1,8 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// import path from 'path';
+// import { fileURLToPath } from 'url';
+//
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
 export const swaggerOptions = {
     swaggerDefinition: {
@@ -32,6 +32,6 @@ export const swaggerOptions = {
             },
         ],
     },
-    apis: ['./app.js'], // Path to the API docs
+    apis: ['./api.js'], // Path to the API docs
     // apis: ['./routes/*.js'], // Path to the API docs
 };
