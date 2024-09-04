@@ -120,12 +120,12 @@ api.use('/api/', router);
 export const handler = serverless(api);*/
 
 
-
 import express, { Router } from "express";
 import serverless from "serverless-http";
-import swaggerJsdoc from 'swagger-jsdoc';
-import { swaggerOptions } from './swaggerConfig.js';
-import swaggerUi from "swagger-ui-express";
+import jwt from 'jsonwebtoken';
+// import swaggerJsdoc from 'swagger-jsdoc';
+// import { swaggerOptions } from './swaggerConfig.js';
+// import swaggerUi from "swagger-ui-express";
 
 const api = express();
 
@@ -146,8 +146,8 @@ const generateTokens = (user) => {
 };
 
 // Swagger setup
-const specs = swaggerJsdoc(swaggerOptions);
-api.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+// const specs = swaggerJsdoc(swaggerOptions);
+// api.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 router.get('/check', (req, res) => {
     res.status(200).json({ message: 'All working' });
