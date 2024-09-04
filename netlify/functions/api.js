@@ -160,7 +160,7 @@ const generateTokens = (user) => {
 
 // Swagger setup
 const specs = swaggerJsdoc(swaggerOptions);
-api.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
+api.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 router.post('/signin', (req, res) => {
     const { email, password } = req.body;
