@@ -224,14 +224,15 @@ router.post('/refresh', (req, res) => {
 });
 
 router.get('/check', (req, res) => {
-    res.status(200).json({ message: 'All working' });
+    res.status(200).json({ body: 'All working' });
 });
 
 router.get('/users', (req, res) => {
     res.status(200).json({ users });
 });
 
-router.get("/hello", (req, res) => res.send("Hello World!"));
+router.get("/hello", (req, res) =>
+    res.send("Hello World!"));
 
 api.use("/api/", router);
 
