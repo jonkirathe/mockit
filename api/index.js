@@ -6,26 +6,26 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import { Server } from 'socket.io';
 import http from 'http';
-import { swaggerOptions } from './swaggerConfig.js';
+import { swaggerOptions } from '../swaggerConfig.js';
 
-const app = express();
+const index = express();
 const port = 3500;
 
-const server = http.createServer(app);
+const server = http.createServer(index);
 const io = new Server(server);
 
-app.use(express.json());
-app.use(morgan('combined', {
+index.use(express.json());
+index.use(morgan('combined', {
   stream: {
     write: (message) => {
       io.emit('log', message.trim());
     }
   }
 })); // Log all requests
-app.use(cors()); // Enable CORS for all routes
+index.use(cors()); // Enable CORS for all routes
 
 // Serve static files from the "public" directory
-app.use(express.static('public'));
+index.use(express.static('public'));
 
 const users = [
   { id: 1, email: 'user@example.com', password: 'password', role: 'user' },
@@ -42,7 +42,7 @@ const generateTokens = (user) => {
 
 // Swagger setup
 const specs = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+index.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 /**
  * @swagger
@@ -66,7 +66,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
  *       401:
  *         description: Invalid email or password
  */
-app.post('/api/signin', (req, res) => {
+index.post('/api/signin', (req, res) => {
   const { email, password } = req.body;
   const user = users.find((u) => u.email === email && u.password === password);
 
@@ -100,7 +100,7 @@ app.post('/api/signin', (req, res) => {
  *       409:
  *         description: User already exists
  */
-app.post('/api/signup', (req, res) => {
+index.post('/api/signup', (req, res) => {
   const { email, password } = req.body;
   const userExists = users.some((u) => u.email === email);
 
@@ -129,7 +129,7 @@ app.post('/api/signup', (req, res) => {
  *       404:
  *         description: User not found
  */
-app.get('/api/user', (req, res) => {
+index.get('/api/user', (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).json({ message: 'Authorization header is missing' });
@@ -169,7 +169,7 @@ app.get('/api/user', (req, res) => {
  *       401:
  *         description: Invalid refresh token
  */
-app.post('/api/refresh', (req, res) => {
+index.post('/api/refresh', (req, res) => {
   const { refreshToken } = req.body;
   try {
     const decoded = jwt.verify(refreshToken, REFRESH_SECRET_KEY);
@@ -194,7 +194,7 @@ app.post('/api/refresh', (req, res) => {
  *       200:
  *         description: Server is working
  */
-app.get('/api/check', (req, res) => {
+index.get('/api/check', (req, res) => {
   res.status(200).json({ message: 'All working' });
 });
 
@@ -207,7 +207,7 @@ app.get('/api/check', (req, res) => {
  *       200:
  *         description: List of users retrieved successfully
  */
-app.get('/api/users', (req, res) => {
+index.get('/api/users', (req, res) => {
   res.status(200).json({ users });
 });
 

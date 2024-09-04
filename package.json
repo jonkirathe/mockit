@@ -1,10 +1,11 @@
 {
   "name": "mockit",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
-  "main": "app.js",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node api/index.js",
+    "build": "npm install && npm run start"
   },
   "dependencies": {
     "axios": "^1.7.7",
