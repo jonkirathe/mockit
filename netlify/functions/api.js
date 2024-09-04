@@ -125,7 +125,7 @@ import jwt from 'jsonwebtoken';
 import swaggerJsdoc from 'swagger-jsdoc';
 import {swaggerOptions} from './swaggerConfig.js';
 // import morgan from 'morgan';
-// import cors from 'cors';
+import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import express, {Router} from "express";
 // import {io} from "socket.io-client";
@@ -134,7 +134,7 @@ const api = express();
 
 const router = Router();
 
-// api.use(express.json());
+api.use(express.json());
 // api.use(morgan('combined', {
 //     stream: {
 //         write: (message) => {
@@ -142,7 +142,7 @@ const router = Router();
 //         }
 //     }
 // })); // Log all requests
-// api.use(cors()); // Enable CORS for all routes
+api.use(cors()); // Enable CORS for all routes
 
 const users = [
     { id: 1, email: 'user@example.com', password: 'password', role: 'user' },
