@@ -232,7 +232,7 @@ router.get('/check', (req, res) => {
     res.status(200).json({message});
 });
 
-router.get('/users', (req, res) => {
+router.post('/users', (req, res) => {
     res.status(200).json({users});
 });
 
