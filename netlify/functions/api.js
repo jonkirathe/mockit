@@ -135,14 +135,14 @@ const api = express();
 const router = Router();
 
 api.use(express.json());
-/*api.use(morgan('combined', {
+api.use(morgan('combined', {
     stream: {
         write: (message) => {
             // io.emit('log', message.trim());
         }
     }
-})); // Log all requests*/
-api.use(morgan('combined')); // Log all requests
+})); // Log all requests
+// api.use(morgan('combined')); // Log all requests
 api.use(cors()); // Enable CORS for all routes
 
 const users = [
