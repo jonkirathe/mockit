@@ -134,6 +134,11 @@ const api = express();
 
 const router = Router();
 
+const PORT = process.env.PORT || 3500;
+api.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
+
 api.use(express.json());
 api.use(morgan('combined', {
     stream: {
@@ -162,7 +167,29 @@ const generateTokens = (user) => {
 const specs = swaggerJsdoc(swaggerOptions);
 api.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
-router.post('/signin', (req, res) => {
+/**
+ * @swagger
+ * /api/signin:
+ *   post:
+ *     summary: Sign in a user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Successful sign in
+ *       401:
+ *         description: Invalid email or password
+ */
+api.post('/api/signin', (req, res) => {
     const { email, password } = req.body;
     const user = users.find((u) => u.email === email && u.password === password);
 
@@ -174,7 +201,29 @@ router.post('/signin', (req, res) => {
     }
 });
 
-router.post('/signup', (req, res) => {
+/**
+ * @swagger
+ * /api/signup:
+ *   post:
+ *     summary: Sign up a new user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *       409:
+ *         description: User already exists
+ */
+api.post('/api/signup', (req, res) => {
     const { email, password } = req.body;
     const userExists = users.some((u) => u.email === email);
 
@@ -188,13 +237,23 @@ router.post('/signup', (req, res) => {
     }
 });
 
-router.get('/user', (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).json({ message: 'Authorization header is missing' });
-    }
-
-    const token = authHeader.split(' ')[1];
+/**
+ * @swagger
+ * /api/user:
+ *   get:
+ *     summary: Get authenticated user details
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User details retrieved successfully
+ *       401:
+ *         description: Invalid token
+ *       404:
+ *         description: User not found
+ */
+api.get('/api/user', (req, res) => {
+    const token = req.headers.authorization.split(' ')[1];
     try {
         const decoded = jwt.verify(token, SECRET_KEY);
         const user = users.find((u) => u.id === decoded.id);
@@ -208,7 +267,27 @@ router.get('/user', (req, res) => {
     }
 });
 
-router.post('/refresh', (req, res) => {
+/**
+ * @swagger
+ * /api/refresh:
+ *   post:
+ *     summary: Refresh access token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Token refreshed successfully
+ *       401:
+ *         description: Invalid refresh token
+ */
+api.post('/api/refresh', (req, res) => {
     const { refreshToken } = req.body;
     try {
         const decoded = jwt.verify(refreshToken, REFRESH_SECRET_KEY);
@@ -224,11 +303,29 @@ router.post('/refresh', (req, res) => {
     }
 });
 
-router.get('/check', (req, res) => {
+/**
+ * @swagger
+ * /api/check:
+ *   get:
+ *     summary: Check if the server is working
+ *     responses:
+ *       200:
+ *         description: Server is working
+ */
+api.get('/api/check', (req, res) => {
     res.status(200).json({ message: 'All working' });
 });
 
-router.get('/users', (req, res) => {
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get all users
+ *     responses:
+ *       200:
+ *         description: List of users retrieved successfully
+ */
+api.get('/api/users', (req, res) => {
     res.status(200).json({ users });
 });
 

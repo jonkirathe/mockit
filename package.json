@@ -2,9 +2,9 @@
   "name": "mockit",
   "version": "1.0.0",
   "type": "module",
-  "main": "netlify/index.js",
+  "main": "netlify/functions/api.js",
   "scripts": {
-    "start": "node netlify/index.js",
+    "start": "node netlify/functions/api.js",
     "build": "npm install && npm run start"
   },
   "dependencies": {
