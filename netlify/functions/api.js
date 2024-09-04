@@ -145,16 +145,20 @@ api.use(morgan('combined', {
 api.use(cors()); // Enable CORS for all routes
 
 const users = [
-    { id: 1, email: 'user@example.com', password: 'password', role: 'user' },
+    {id: 1, email: 'user@example.com', password: 'password', role: 'user'},
 ];
 
 const SECRET_KEY = 'vW8nF/bLKidnpIHC2ngYZNbdOe+tbFcoZ7muV0vCRYk=';
 const REFRESH_SECRET_KEY = '3cN5xXHOsKhB7qxoDzWQcEMrtR0DZ6leTrkyHYOqIro=';
 
 const generateTokens = (user) => {
-    const accessToken = jwt.sign({ id: user.id, email: user.email, role: user.role }, SECRET_KEY, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ id: user.id, email: user.email, role: user.role }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
-    return { accessToken, refreshToken };
+    const accessToken = jwt.sign({id: user.id, email: user.email, role: user.role}, SECRET_KEY, {expiresIn: '15m'});
+    const refreshToken = jwt.sign({
+        id: user.id,
+        email: user.email,
+        role: user.role
+    }, REFRESH_SECRET_KEY, {expiresIn: '7d'});
+    return {accessToken, refreshToken};
 };
 
 // Swagger setup
@@ -162,35 +166,35 @@ const specs = swaggerJsdoc(swaggerOptions);
 api.use('/docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 router.post('/signin', (req, res) => {
-    const { email, password } = req.body;
+    const {email, password} = req.body;
     const user = users.find((u) => u.email === email && u.password === password);
 
     if (user) {
         const tokens = generateTokens(user);
-        res.status(200).json({ user, ...tokens });
+        res.status(200).json({user, ...tokens});
     } else {
-        res.status(401).json({ message: 'Invalid email or password' });
+        res.status(401).json({message: 'Invalid email or password'});
     }
 });
 
 router.post('/signup', (req, res) => {
-    const { email, password } = req.body;
+    const {email, password} = req.body;
     const userExists = users.some((u) => u.email === email);
 
     if (userExists) {
-        res.status(409).json({ message: 'User already exists' });
+        res.status(409).json({message: 'User already exists'});
     } else {
-        const newUser = { id: users.length + 1, email, password, role: 'user' };
+        const newUser = {id: users.length + 1, email, password, role: 'user'};
         users.push(newUser);
         const tokens = generateTokens(newUser);
-        res.status(201).json({ user: newUser, ...tokens });
+        res.status(201).json({user: newUser, ...tokens});
     }
 });
 
 router.get('/user', (req, res) => {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-        return res.status(401).json({ message: 'Authorization header is missing' });
+        return res.status(401).json({message: 'Authorization header is missing'});
     }
 
     const token = authHeader.split(' ')[1];
@@ -198,37 +202,38 @@ router.get('/user', (req, res) => {
         const decoded = jwt.verify(token, SECRET_KEY);
         const user = users.find((u) => u.id === decoded.id);
         if (user) {
-            res.status(200).json({ user });
+            res.status(200).json({user});
         } else {
-            res.status(404).json({ message: 'User not found' });
+            res.status(404).json({message: 'User not found'});
         }
     } catch (error) {
-        res.status(401).json({ message: 'Invalid token' });
+        res.status(401).json({message: 'Invalid token'});
     }
 });
 
 router.post('/refresh', (req, res) => {
-    const { refreshToken } = req.body;
+    const {refreshToken} = req.body;
     try {
         const decoded = jwt.verify(refreshToken, REFRESH_SECRET_KEY);
         const user = users.find((u) => u.id === decoded.id);
         if (user) {
             const tokens = generateTokens(user);
-            res.status(200).json({ ...tokens });
+            res.status(200).json({...tokens});
         } else {
-            res.status(401).json({ message: 'Invalid refresh token' });
+            res.status(401).json({message: 'Invalid refresh token'});
         }
     } catch (error) {
-        res.status(401).json({ message: 'Invalid refresh token' });
+        res.status(401).json({message: 'Invalid refresh token'});
     }
 });
 
 router.get('/check', (req, res) => {
-    res.status(200);
+    let message = 'ALL IS WELL HERE'
+    res.status(200).json({message});
 });
 
 router.get('/users', (req, res) => {
-    res.status(200).json({ users });
+    res.status(200).json({users});
 });
 
 router.get("/hello", (req, res) =>
