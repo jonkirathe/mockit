@@ -17,7 +17,7 @@ Welcome to the Mockit Server! This is an open-source mock server designed to hel
 
 ## Introduction
 
-The Mock Server provides a simple and flexible way to create and manage mock API endpoints. It supports authentication, token refresh, and user management, making it ideal for testing and development. This project aims to help developers by providing a ready-to-use mock server that can be easily integrated into their workflow.
+The Mockit Server provides a simple and flexible way to create and manage mock API endpoints. It supports authentication, token refresh, and user management, making it ideal for testing and development. This project aims to help developers by providing a ready-to-use mock server that can be easily integrated into their workflow.
 
 ## Features
 
@@ -39,7 +39,7 @@ Before you begin, ensure you have the following installed on your machine:
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/your-repo/mock-server.git
+    git clone https://github.com/jonkirathe/mockit.git
     cd mock-server
     ```
 
