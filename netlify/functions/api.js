@@ -26,7 +26,7 @@ api.use(morgan('combined', {
 api.use(cors()); // Enable CORS for all routes
 
 // Serve static files from the "public" directory
-api.use(express.static('public'));
+// api.use(express.static('public'));
 
 const users = [
   { id: 1, email: 'user@example.com', password: 'password', role: 'user' },
