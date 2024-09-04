@@ -134,7 +134,7 @@ const api = express();
 
 const router = Router();
 
-api.use(express.json());
+// api.use(express.json());
 api.use(morgan('combined', {
     stream: {
         write: (message) => {
