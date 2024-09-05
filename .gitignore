@@ -43,3 +43,6 @@ Thumbs.db
 
 /dev
 .vercel
+
+# Local Netlify folder
+.netlify

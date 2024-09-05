@@ -26,7 +26,7 @@
     <header>
         <h1>Welcome to the Mockit Server</h1>
         <p>This is an open-source Mockit server that can be used by developers to simulate API endpoints for testing and development purposes.</p>
-        <p>For interactive API documentation, visit the <a href="/api-docs" target="_blank">Swagger API Documentation</a>.</p>
+<!--        <p>For interactive API documentation, visit the <a href="/api-docs" target="_blank">Swagger API Documentation</a>.</p>-->
     </header>
     <main>
         <section>
@@ -45,10 +45,87 @@
             <p>Let's collaborate and make this project grow!</p>
         </section>
         <section>
+            <h2>API Documentation</h2>
+            <p>Below are the available API endpoints:</p>
+            <div class="endpoint">
+                <h3>POST /api/signin</h3>
+                <p>Sign in a user</p>
+                <pre>
+Request Body:
+{
+  "email": "string",
+  "password": "string"
+}
+
+Responses:
+200: Successful sign in
+401: Invalid email or password
+                </pre>
+            </div>
+            <div class="endpoint">
+                <h3>POST /api/signup</h3>
+                <p>Sign up a new user</p>
+                <pre>
+Request Body:
+{
+  "email": "string",
+  "password": "string"
+}
+
+Responses:
+201: User created successfully
+409: User already exists
+                </pre>
+            </div>
+            <div class="endpoint">
+                <h3>GET /api/user</h3>
+                <p>Get authenticated user details</p>
+                <pre>
+Headers:
+Authorization: Bearer <token>
+
+Responses:
+200: User details retrieved successfully
+401: Invalid token
+404: User not found
+                </pre>
+            </div>
+            <div class="endpoint">
+                <h3>POST /api/refresh</h3>
+                <p>Refresh access token</p>
+                <pre>
+Request Body:
+{
+  "refreshToken": "string"
+}
+
+Responses:
+200: Token refreshed successfully
+401: Invalid refresh token
+                </pre>
+            </div>
+            <div class="endpoint">
+                <h3>GET /api/check</h3>
+                <p>Check if the server is working</p>
+                <pre>
+Responses:
+200: Server is working
+                </pre>
+            </div>
+            <div class="endpoint">
+                <h3>GET /api/users</h3>
+                <p>Get all users</p>
+                <pre>
+Responses:
+200: List of users retrieved successfully
+                </pre>
+            </div>
+        </section>
+        <!--<section>
             <div id="log-container" class="log-container">
                 <h2>Request Logs</h2>
             </div>
-        </section>
+        </section>-->
     </main>
     <footer>
         <p>© 2024 Mockit Server. All rights reserved.</p>

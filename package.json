@@ -1,17 +1,16 @@
 {
   "name": "mockit",
   "version": "1.0.0",
-  "type": "module",
   "main": "netlify/functions/api.js",
+  "type": "module",
   "scripts": {
     "start": "node netlify/functions/api.js",
     "build": "npm install && npm run start"
   },
   "dependencies": {
     "@netlify/functions": "^2.8.1",
+    "@netlify/open-api": "^2.34.0",
     "@types/express": "^4.17.21",
-    "axios": "^1.7.7",
-    "axios-mock-adapter": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",

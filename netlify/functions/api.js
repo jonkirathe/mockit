@@ -123,21 +123,24 @@ export const handler = serverless(api);*/
 import serverless from "serverless-http";
 import jwt from 'jsonwebtoken';
 import swaggerJsdoc from 'swagger-jsdoc';
-import {swaggerOptions} from './swaggerConfig.js';
+// import {swaggerOptions} from './swaggerConfig.js';
 import morgan from 'morgan';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import express, {Router} from "express";
 // import {io} from "socket.io-client";
+import spec from '@netlify/open-api'
+
 
 const api = express();
 
 const router = Router();
 
-const PORT = process.env.PORT || 3500;
-api.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+// const PORT = process.env.PORT || 3600;
+// api.listen(PORT, () => {
+//     console.log(`Server is running on http://localhost:${PORT}`);
+// });
+
 
 api.use(express.json());
 api.use(morgan('combined', {
@@ -149,6 +152,9 @@ api.use(morgan('combined', {
 })); // Log all requests
 // api.use(morgan('combined')); // Log all requests
 api.use(cors()); // Enable CORS for all routes
+
+// Serve static files from the "public" directory
+api.use(express.static('public'));
 
 const users = [
     { id: 1, email: 'user@example.com', password: 'password', role: 'user' },
@@ -164,8 +170,8 @@ const generateTokens = (user) => {
 };
 
 // Swagger setup
-const specs = swaggerJsdoc(swaggerOptions);
-api.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+// const specs = swaggerJsdoc(swaggerOptions);
+router.use('/api-docs', swaggerUi.serve, swaggerUi.setup(spec));
 
 /**
  * @swagger
@@ -189,7 +195,7 @@ api.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
  *       401:
  *         description: Invalid email or password
  */
-api.post('/api/signin', (req, res) => {
+router.post('/signin', (req, res) => {
     const { email, password } = req.body;
     const user = users.find((u) => u.email === email && u.password === password);
 
@@ -223,7 +229,7 @@ api.post('/api/signin', (req, res) => {
  *       409:
  *         description: User already exists
  */
-api.post('/api/signup', (req, res) => {
+router.post('/signup', (req, res) => {
     const { email, password } = req.body;
     const userExists = users.some((u) => u.email === email);
 
@@ -252,7 +258,7 @@ api.post('/api/signup', (req, res) => {
  *       404:
  *         description: User not found
  */
-api.get('/api/user', (req, res) => {
+router.get('/user', (req, res) => {
     const token = req.headers.authorization.split(' ')[1];
     try {
         const decoded = jwt.verify(token, SECRET_KEY);
@@ -287,7 +293,7 @@ api.get('/api/user', (req, res) => {
  *       401:
  *         description: Invalid refresh token
  */
-api.post('/api/refresh', (req, res) => {
+router.post('/refresh', (req, res) => {
     const { refreshToken } = req.body;
     try {
         const decoded = jwt.verify(refreshToken, REFRESH_SECRET_KEY);
@@ -312,7 +318,7 @@ api.post('/api/refresh', (req, res) => {
  *       200:
  *         description: Server is working
  */
-api.get('/api/check', (req, res) => {
+router.get('/check', (req, res) => {
     res.status(200).json({ message: 'All working' });
 });
 
@@ -325,13 +331,10 @@ api.get('/api/check', (req, res) => {
  *       200:
  *         description: List of users retrieved successfully
  */
-api.get('/api/users', (req, res) => {
+router.get('/users', (req, res) => {
     res.status(200).json({ users });
 });
 
-api.get("/hello", (req, res) =>
-    res.send("Hello World!"));
-
-// api.use("/api/", router);
+api.use("/api/", router);
 
 export const handler = serverless(api);
