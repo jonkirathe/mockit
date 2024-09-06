@@ -2,6 +2,9 @@
 
 Welcome to the Mockit Server! This is an open-source mock server designed to help developers simulate API endpoints for testing and development purposes.
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/f1c19406-e85e-49e5-91ff-389b85404107/deploy-status)](https://app.netlify.com/sites/mockit-server/deploys)
+
+
 ## Table of Contents
 
 - Introduction
