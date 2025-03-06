@@ -175,7 +175,6 @@ function logout(req, res) {
 }
 
 // Routes
-
 router.post('/signin', validateCsrfToken, (req, res) => {
     const { email, password } = req.body;
     const data = readData();
@@ -314,7 +313,6 @@ router.get('/users', validateCsrfToken, validateAccessToken, (req, res) => {
 });
 
 // Pets Routes
-
 router.post('/pet', validateCsrfToken, validateAccessToken, (req, res) => {
     const data = readData();
     const { name, breed, age, gender, ownerId, description, careSuggestions, animalType, imageUrl } = req.body;
@@ -390,7 +388,6 @@ router.delete('/pet/:id', validateCsrfToken, validateAccessToken, (req, res) => 
 });
 
 // Tasks Routes
-
 router.post('/task', validateCsrfToken, validateAccessToken, (req, res) => {
     const data = readData();
     const { completed, title, description, priority, dueDate } = req.body;
