@@ -2,124 +2,316 @@ import serverless from "serverless-http";
 import jwt from "jsonwebtoken";
 import morgan from "morgan";
 import cors from "cors";
-import express, { Router } from "express";
+import express, {Router} from "express";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import session from "express-session";
+import bcrypt from 'bcryptjs';
+import helmet from 'helmet';
 
 dotenv.config();
-
-const domain = process.env.DOMAIN;
-const ORIGIN_DOMAIN = process.env.ORIGIN_DOMAIN;
-const SECRET_KEY = process.env.SECRET_KEY
 
 const api = express();
 const router = Router();
 const port = process.env.PORT || 8080;
 api.set("port", port);
 
+const tokenBlacklist = new Set();
+
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
+    expires: new Date(Date.now() + 15 * 60 * 1000)
+}
+
+const allowedOrigins = [
+    ...(process.env.ALLOWED_ORIGINS?.split(',') || []),
+    ...(process.env.NODE_ENV === 'development'
+        ? ['http://localhost:3000', 'http://127.0.0.1:3000']
+        : [])
+];
+
 // Middleware setup
+// Disable CSP in development for easier debugging
+if (process.env.NODE_ENV === 'development') {
+    api.use(
+        helmet({
+            contentSecurityPolicy: false,
+            crossOriginEmbedderPolicy: false
+        })
+    );
+} else {
+    // Customized Helmet configuration
+    api.use(
+        helmet({
+            contentSecurityPolicy: {
+                directives: {
+                    defaultSrc: ["'self'"],
+                    scriptSrc: ["'self'", "'unsafe-inline'", "trusted-cdn.example.com"],
+                    styleSrc: ["'self'", "'unsafe-inline'"],
+                    imgSrc: ["'self'", "data:", "cdn.example.com"],
+                    connectSrc: ["'self'", "api.example.com"]
+                }
+            },
+            hsts: {
+                maxAge: 63072000, // 2 years in seconds
+                includeSubDomains: true,
+                preload: true
+            },
+            referrerPolicy: {policy: 'same-origin'}
+        })
+    );
+}
 api.use(express.json());
 api.use(cookieParser());
 api.use(morgan("combined"));
 api.use(
     cors({
-        origin: ORIGIN_DOMAIN,
+        origin: (origin, callback) => {
+            if (!origin) {
+                // Allow non-browser clients in development
+                if (process.env.NODE_ENV === 'development') {
+                    return callback(null, true);
+                }
+                return callback(new Error('Origin required in production'));
+            }
+
+            // Validate protocol in production
+            if (process.env.NODE_ENV === 'production' && !origin.startsWith('https://')) {
+                return callback(new Error('HTTPS required'));
+            }
+
+            const isAllowed = allowedOrigins.some(allowedOrigin => {
+                // Allow wildcard subdomains
+                if (allowedOrigin.startsWith('*.')) {
+                    const domain = allowedOrigin.replace('*.', '');
+                    return origin.endsWith(domain);
+                }
+                return origin === allowedOrigin;
+            });
+
+            if (isAllowed) {
+                console.log(`Allowed origin: ${origin}`);
+                callback(null, true);
+            } else {
+                console.warn(`Blocked origin: ${origin}`);
+                callback(new Error(`Origin ${origin} not allowed`));
+            }
+        },
         credentials: true,
+        optionsSuccessStatus: 200
     })
 );
 api.use(express.static("public"));
-
-// Rate limiting middleware
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100,
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-api.use(limiter);
-
-// CSRF token middleware
-const generateCsrfToken = () => {
-    return crypto.randomBytes(32).toString("hex");
-};
-
-api.use((req, res, next) => {
-    let csrfToken = req.cookies.csrfToken;
-    if (!csrfToken && !req.session?.csrfToken) {
-        csrfToken = generateCsrfToken();
-        if (req.session) {
-            req.session.csrfToken = csrfToken;
-        }
-        res.cookie("csrfToken", csrfToken, { httpOnly: false, secure: false });
-    }
-    req.csrfToken = req.session?.csrfToken || csrfToken;
-    next();
-});
-
-const validateCsrfToken = (req, res, next) => {
-    const csrfToken = req.cookies.csrfToken;
-    const csrfTokenFromHeader = req.headers["x-csrf-token"];
-    const csrfTokenFromSession = req.session?.csrfToken;
-    if ((csrfToken || csrfTokenFromHeader) !== csrfTokenFromSession) {
-        return res.status(403).send("Invalid CSRF token");
-    }
-    next();
-};
-
 api.use(
     session({
-        secret: SECRET_KEY,
+        secret: process.env.SECRET_KEY,
         resave: false,
         saveUninitialized: true,
-        cookie: { secure: false },
+        cookie: {
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict"
+        }
     })
 );
 
-// JWT token functions
+if (process.env.NODE_ENV === 'production') {
+    api.use((req, res, next) => {
+        const userAgent = req.headers['user-agent'];
+
+        // Block common API client user-agents
+        const blockedClients = [
+            'PostmanRuntime',
+            'curl',
+            'Insomnia',
+            'Thunder Client'
+        ];
+
+        if (blockedClients.some(client => userAgent?.includes(client))) {
+            return res.status(403).json({
+                error: "API access not allowed through client tools",
+                code: "client_tool_blocked"
+            });
+        }
+
+        next();
+    });
+}
+
+// Security middleware
+const generateCsrfToken = () => crypto.randomBytes(32).toString("hex");
+api.use((req, res, next) => {
+    if (!req.session.csrfToken) {
+        req.session.csrfToken = generateCsrfToken();
+    }
+    next();
+});
+
+// Rate limiting
+const authLimiter = rateLimit({
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 5,
+    handler: (req, res) => {
+        res.status(429).json({
+            error: "Too many requests",
+            code: "rate_limit_exceeded"
+        });
+    }
+});
+
+const apiLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 100,
+    handler: (req, res) => {
+        res.status(429).json({
+            error: "Too many requests",
+            code: "rate_limit_exceeded"
+        });
+    }
+});
+
+// Enhanced CSRF validation
+const logSecurityEvent = (req, eventType) => {
+    console.log(`Security Event: ${eventType}`, {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+        endpoint: req.originalUrl,
+        timestamp: new Date().toISOString()
+    });
+};
+
+const validateCsrfToken = (req, res, next) => {
+    const csrfToken = req.headers["x-csrf-token"];
+
+    if (!csrfToken || !req.session.csrfToken) {
+        logSecurityEvent(req, "CSRF_TOKEN_MISSING");
+        req.session.destroy();
+        return res.status(403).json({
+            error: "Security validation failed",
+            code: "security_validation_error"
+        });
+    }
+
+    if (!crypto.timingSafeEqual(
+        Buffer.from(csrfToken),
+        Buffer.from(req.session.csrfToken)
+    )) {
+        logSecurityEvent(req, "CSRF_TOKEN_MISMATCH");
+        req.session.destroy();
+        return res.status(403).json({
+            error: "Security validation failed",
+            code: "security_validation_error"
+        });
+    }
+
+    next();
+};
+
+// Token management
 const generateTokens = (user) => {
     const accessToken = jwt.sign(
-        { id: user.id, email: user.email, role: user.role },
-        SECRET_KEY,
-        { expiresIn: "15m" }
+        {id: user.id, email: user.email, role: user.role},
+        process.env.SECRET_KEY,
+        {expiresIn: "15m"}
     );
+
     const refreshToken = jwt.sign(
-        { id: user.id, email: user.email, role: user.role },
-        SECRET_KEY,
-        { expiresIn: "7d" }
+        {id: user.id},
+        process.env.SECRET_KEY,
+        {expiresIn: "7d"}
     );
-    const accessTokenExpiresIn = new Date(Date.now() + 15 * 60 * 1000);
-    const cookieAccessTokenExpiresIn = new Date(Date.now() + 20 * 60 * 1000);
-    const refreshTokenExpiresIn = new Date(Date.now() + 7 * 24 * 60 * 1000);
-    const cookieRefreshTokenExpiresIn = new Date(Date.now() + 8 * 24 * 60 * 1000);
+
     return {
         accessToken,
         refreshToken,
-        accessTokenExpiresIn,
-        cookieAccessTokenExpiresIn,
-        refreshTokenExpiresIn,
-        cookieRefreshTokenExpiresIn,
+        cookieOptions: cookieOptions
     };
 };
 
-const tokenBlacklist = new Set();
+// Authentication middleware
+const validateAccessToken = (req, res, next) => {
+    const token = req.cookies.accessToken;
 
-function logout(req, res) {
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
-    res.clearCookie("csrfToken");
-    if (req.session) req.session.csrfToken = null;
-}
+    if (!token) {
+        return res.status(401).json({
+            error: "Authentication required",
+            code: "missing_access_token"
+        });
+    }
 
+    jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+        if (err) {
+            if (err.name === 'TokenExpiredError') {
+                return handleTokenRefresh(req, res, next);
+            }
+            return res.status(401).json({
+                error: "Invalid token",
+                code: "invalid_access_token"
+            });
+        }
+
+        req.user = decoded;
+        next();
+    });
+};
+
+const handleTokenRefresh = (req, res, next) => {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+        return res.status(401).json({
+            error: "Session expired",
+            code: "missing_refresh_token"
+        });
+    }
+
+    jwt.verify(refreshToken, process.env.SECRET_KEY, (err, decoded) => {
+        if (err) {
+            return res.status(401).json({
+                error: "Session expired",
+                code: "invalid_refresh_token"
+            });
+        }
+
+        const user = users.find(u => u.id === decoded.id);
+        if (!user) {
+            return res.status(401).json({
+                error: "User not found",
+                code: "invalid_user_session"
+            });
+        }
+
+        const {accessToken, cookieOptions} = generateTokens(user);
+        res.cookie("accessToken", accessToken, cookieOptions);
+        next();
+    });
+};
+
+// Password validation
+const validatePasswordComplexity = (password) => {
+    const complexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!complexityRegex.test(password)) {
+        throw new Error('Password must contain at least 8 characters, one uppercase, one lowercase, one number and one special character');
+    }
+};
+
+// Apply rate limits
+router.use('/signin', authLimiter);
+router.use('/signup', authLimiter);
+router.use("/api", apiLimiter);
+
+// In-memory databases
 const users = [
     {
         "id": 1,
         "names": "John Doe",
         "email": "user@example.com",
         "address": "147 Nairobi Kenya",
-        "password": "password@123",
+        "password": bcrypt.hashSync("password@123", 10),
+        "role": "user",
         "date": 7845555
     },
     {
@@ -127,296 +319,11 @@ const users = [
         "names": "Mary Ann",
         "email": "user2@example.com",
         "address": "10 Mombasa Kenya",
-        "password": "password@123",
+        "password": bcrypt.hashSync("password@123", 10),
+        "role": "admin",
         "date": 7845555
     }
 ];
-
-// Routes
-
-router.post("/signin", validateCsrfToken, (req, res) => {
-    const { email, password } = req.body;
-    const user = users.find(
-        (u) => u.email === email && u.password === password
-    );
-    if (user) {
-        const {
-            accessToken,
-            refreshToken,
-            cookieAccessTokenExpiresIn,
-            cookieRefreshTokenExpiresIn,
-        } = generateTokens(user);
-        req.session.accessToken = accessToken;
-        req.session.refreshToken = refreshToken;
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "Strict",
-            expires: cookieAccessTokenExpiresIn,
-        });
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "Strict",
-            expires: cookieRefreshTokenExpiresIn,
-        });
-        res.status(200).json({ user });
-    } else {
-        res.status(401).json({ message: "Invalid email or password" });
-    }
-});
-
-router.get("/csrf-token", (req, res) => {
-    res.json({ csrfToken: req.csrfToken });
-});
-
-router.post("/signup", validateCsrfToken, (req, res) => {
-    const { username, email, password, passwordConfirmation } = req.body;
-    if (password !== passwordConfirmation) {
-        return res.status(400).json({ message: "Passwords do not match" });
-    }
-    const userExists = users.some((u) => u.email === email);
-    if (userExists) {
-        res.status(409).json({ message: "User already exists" });
-    } else {
-        const newUser = {
-            id: users.length ? Math.max(...users.map((u) => u.id)) + 1 : 1,
-            username,
-            email,
-            password,
-            role: "user",
-        };
-        users.push(newUser);
-        const {
-            accessToken,
-            refreshToken,
-            cookieAccessTokenExpiresIn,
-            cookieRefreshTokenExpiresIn,
-        } = generateTokens(newUser);
-        req.session.accessToken = accessToken;
-        req.session.refreshToken = refreshToken;
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "Strict",
-            expires: cookieAccessTokenExpiresIn,
-        });
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "Strict",
-            expires: cookieRefreshTokenExpiresIn,
-        });
-        res.status(201).json({ user: newUser, csrfToken: req.csrfToken });
-    }
-});
-
-router.post("/logout", validateCsrfToken, (req, res) => {
-    logout(req, res);
-    res.status(200).json({ message: "User logged out successfully" });
-});
-
-router.get("/user", validateCsrfToken, (req, res) => {
-    const token = req.cookies.accessToken;
-    if (tokenBlacklist.has(token)) {
-        return res.status(401).json({ message: "Token has been invalidated" });
-    }
-    try {
-        const decoded = jwt.verify(token, SECRET_KEY);
-        const user = users.find((u) => u.id === decoded.id);
-        if (user) {
-            res.status(200).json({ user });
-        } else {
-            res.status(404).json({ message: "User not found" });
-        }
-    } catch (error) {
-        res.status(401).json({ message: "Invalid token" });
-    }
-});
-
-router.post("/refresh", validateCsrfToken, (req, res) => {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) {
-        logout(req, res);
-        return res.status(401).json({ message: "Refresh token is missing" });
-    }
-    try {
-        const decoded = jwt.verify(refreshToken, SECRET_KEY);
-        const user = users.find((u) => u.id === decoded.id);
-        if (user) {
-            const {
-                accessToken,
-                refreshToken,
-                cookieAccessTokenExpiresIn,
-                cookieRefreshTokenExpiresIn,
-            } = generateTokens(user);
-            res.cookie("accessToken", accessToken, {
-                httpOnly: true,
-                secure: true,
-                sameSite: "Strict",
-                expires: cookieAccessTokenExpiresIn,
-            });
-            res.cookie("refreshToken", refreshToken, {
-                httpOnly: true,
-                secure: true,
-                sameSite: "Strict",
-                expires: cookieRefreshTokenExpiresIn,
-            });
-            res.status(200).json({ csrfToken: req.csrfToken });
-        } else {
-            logout(req, res);
-            res.status(401).json({ message: "Invalid refresh token" });
-        }
-    } catch (error) {
-        logout(req, res);
-        res.status(401).json({ message: "Invalid refresh token" });
-    }
-});
-
-router.get("/check", validateCsrfToken, (req, res) => {
-    res.status(200).json({ message: "All working" });
-});
-
-router.get("/users", validateCsrfToken, (req, res) => {
-    res.status(200).json({ users });
-});
-
-// Pets Routes
-router.post("/pet", validateCsrfToken, (req, res) => {
-    const { name, breed, age, gender, ownerId, description, careSuggestions, animalType, imageUrl } = req.body;
-    const newPet = {
-        id: pets.length ? Math.max(...pets.map(p => p.id)) + 1 : 1,
-        name,
-        breed,
-        age,
-        gender,
-        ownerId,
-        description,
-        careSuggestions,
-        animalType,
-        imageUrl
-    };
-    pets.push(newPet);
-    res.status(201).json({ pet: newPet });
-});
-
-router.get("/pets", validateCsrfToken, (req, res) => {
-    res.status(200).json({ pets });
-});
-
-router.get("/pet/:id", validateCsrfToken, (req, res) => {
-    const petId = parseInt(req.params.id, 10);
-    const pet = pets.find((p) => p.id === petId);
-    if (pet) {
-        res.status(200).json({ pet });
-    } else {
-        res.status(404).json({ message: "Pet not found" });
-    }
-});
-
-router.put("/pet/:id", validateCsrfToken, (req, res) => {
-    const petId = parseInt(req.params.id, 10);
-    const { name, breed, age, gender, ownerId, description, careSuggestions, animalType, imageUrl } = req.body;
-    const petIndex = pets.findIndex((p) => p.id === petId);
-    if (petIndex !== -1) {
-        pets[petIndex] = {
-            id: petId,
-            name,
-            breed,
-            age,
-            gender,
-            ownerId,
-            description,
-            careSuggestions,
-            animalType,
-            imageUrl
-        };
-        res.status(200).json({ pet: pets[petIndex] });
-    } else {
-        res.status(404).json({ message: "Pet not found" });
-    }
-});
-
-router.delete("/pet/:id", validateCsrfToken, (req, res) => {
-    const petId = parseInt(req.params.id, 10);
-    const petIndex = pets.findIndex((p) => p.id === petId);
-    if (petIndex !== -1) {
-        const deletedPet = pets.splice(petIndex, 1);
-        res.status(200).json({ pet: deletedPet[0] });
-    } else {
-        res.status(404).json({ message: "Pet not found" });
-    }
-});
-
-// Tasks Routes
-router.post("/task", validateCsrfToken, (req, res) => {
-    const { completed, title, description, priority, dueDate } = req.body;
-    const newTask = {
-        id: tasks.length ? Math.max(...tasks.map(t => t.id)) + 1 : 1,
-        completed,
-        title,
-        description,
-        priority,
-        dueDate
-    };
-    tasks.push(newTask);
-    res.status(201).json({ task: newTask });
-});
-
-router.get("/tasks", validateCsrfToken, (req, res) => {
-    res.status(200).json({ tasks });
-});
-
-router.get("/task/:id", validateCsrfToken, (req, res) => {
-    const taskId = parseInt(req.params.id, 10);
-    const task = tasks.find((t) => t.id === taskId);
-    if (task) {
-        res.status(200).json({ task });
-    } else {
-        res.status(404).json({ message: "Task not found" });
-    }
-});
-
-router.put("/task/:id", validateCsrfToken, (req, res) => {
-    const taskId = parseInt(req.params.id, 10);
-    const { completed, title, description, priority, dueDate } = req.body;
-    const taskIndex = tasks.findIndex((t) => t.id === taskId);
-    if (taskIndex !== -1) {
-        tasks[taskIndex] = {
-            id: taskId,
-            completed,
-            title,
-            description,
-            priority,
-            dueDate
-        };
-        res.status(200).json({ task: tasks[taskIndex] });
-    } else {
-        res.status(404).json({ message: "Task not found" });
-    }
-});
-
-router.delete("/task/:id", validateCsrfToken, (req, res) => {
-    const taskId = parseInt(req.params.id, 10);
-    const taskIndex = tasks.findIndex((t) => t.id === taskId);
-    if (taskIndex !== -1) {
-        const deletedTask = tasks.splice(taskIndex, 1);
-        res.status(200).json({ task: deletedTask[0] });
-    } else {
-        res.status(404).json({ message: "Task not found" });
-    }
-});
-
-api.use("/api/", router);
-
-api.listen(port, () => {
-    console.log("Server listening on port: " + port);
-});
-
-export const handler = serverless(api);
-
-// In-memory database (initialized with your JSON data)
-
 
 const tasks = [
     {
@@ -1423,3 +1330,497 @@ const pets = [
         "imageUrl": "https://example.com/pet50.jpg"
     }
 ];
+
+// Routes
+router.get("/csrf-token", (req, res) => {
+    res.json({csrfToken: req.session.csrfToken});
+});
+
+router.get("/check", validateCsrfToken, (req, res) => {
+    res.status(200).json({message: "All working"});
+});
+
+router.post("/signin", validateCsrfToken, (req, res) => {
+    const {email, password} = req.body;
+    const user = users.find(u => u.email === email);
+
+    if (!user || !bcrypt.compareSync(password, user.password)) {
+        return res.status(401).json({
+            error: "Authentication failed",
+            code: "invalid_credentials"
+        });
+    }
+
+    const {accessToken, refreshToken, cookieOptions} = generateTokens(user);
+
+    res.cookie("accessToken", accessToken, cookieOptions);
+    res.cookie("refreshToken", refreshToken, {
+        ...cookieOptions,
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    });
+
+    res.json({
+        user: {
+            id: user.id,
+            names: user.names,
+            email: user.email,
+            address: user.address,
+            role: user.role
+        }
+    });
+});
+
+router.post("/signup", validateCsrfToken, (req, res) => {
+    const {username, email, password, passwordConfirmation} = req.body;
+
+    if (password !== passwordConfirmation) {
+        return res.status(400).json({
+            error: "Passwords do not match",
+            code: "password_mismatch"
+        });
+    }
+
+    try {
+        validatePasswordComplexity(password);
+    } catch (err) {
+        return res.status(400).json({
+            error: err.message,
+            code: "weak_password"
+        });
+    }
+
+    if (users.some(u => u.email === email)) {
+        return res.status(409).json({
+            error: "User already exists",
+            code: "user_exists"
+        });
+    }
+
+    const newUser = {
+        id: users.length + 1,
+        names: username,
+        email,
+        password: bcrypt.hashSync(password, 10),
+        role: "user"
+    };
+
+    users.push(newUser);
+    const {accessToken, refreshToken, cookieOptions} = generateTokens(newUser);
+
+    res.cookie("accessToken", accessToken, cookieOptions);
+    res.cookie("refreshToken", refreshToken, {
+        ...cookieOptions,
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    });
+
+    res.status(201).json({
+        user: {
+            id: newUser.id,
+            names: newUser.names,
+            email: newUser.email,
+            role: newUser.role
+        },
+        csrfToken: req.session.csrfToken
+    });
+});
+
+// Protected routes
+router.post("/logout", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        // Security logging
+        console.log(`User logout initiated:`, {
+            userId: req.user.id,
+            ip: req.ip,
+            userAgent: req.headers["user-agent"]
+        });
+
+        // Perform logout operations
+        logout(req, res);
+
+        // Standardized success response
+        res.status(200).json({
+            success: true,
+            code: "logout_success",
+            message: "Successfully logged out"
+        });
+    } catch (error) {
+        // Error logging
+        console.error("Logout failed:", {
+            userId: req.user?.id,
+            error: error.message,
+            stack: error.stack
+        });
+
+        // Force cleanup on failure
+        res.clearCookie("accessToken");
+        res.clearCookie("refreshToken");
+
+        res.status(500).json({
+            error: "Logout failed",
+            code: "logout_failure",
+            message: "Could not complete logout process"
+        });
+    }
+});
+
+// Updated logout function
+function logout(req, res) {
+    res.clearCookie("accessToken", cookieOptions);
+    res.clearCookie("refreshToken", cookieOptions);
+
+    if (req.session) {
+        req.session.destroy(err => {
+            if (err) console.error("Session destruction error:", err);
+        });
+    }
+
+    // Add token invalidation
+    if (req.cookies.accessToken) {
+        tokenBlacklist.add(req.cookies.accessToken);
+    }
+    if (req.cookies.refreshToken) {
+        tokenBlacklist.add(req.cookies.refreshToken);
+    }
+}
+
+router.get("/user", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        const user = users.find((u) => u.id === req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                error: "User not found",
+                code: "user_not_found"
+            });
+        }
+
+        // Sanitize user data before sending
+        const userData = {
+            id: user.id,
+            names: user.names,
+            email: user.email,
+            role: user.role,
+            address: user.address
+        };
+
+        res.status(200).json({user: userData});
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to retrieve user data",
+            code: "user_data_retrieval_failed"
+        });
+    }
+});
+
+router.post("/refresh", validateCsrfToken, (req, res) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+
+        if (!refreshToken) {
+            logout(req, res);
+            return res.status(401).json({
+                error: "Session expired",
+                code: "missing_refresh_token"
+            });
+        }
+
+        const decoded = jwt.verify(refreshToken, process.env.SECRET_KEY);
+        const user = users.find((u) => u.id === decoded.id);
+
+        if (!user) {
+            logout(req, res);
+            return res.status(401).json({
+                error: "Invalid session",
+                code: "invalid_user_session"
+            });
+        }
+
+        const {accessToken, refreshToken: newRefreshToken, cookieOptions} = generateTokens(user);
+
+        // Set new cookies
+        res.cookie("accessToken", accessToken, cookieOptions);
+        res.cookie("refreshToken", newRefreshToken, {
+            ...cookieOptions,
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+        });
+
+        res.status(200).json({
+            csrfToken: req.session.csrfToken,
+            accessTokenExpires: cookieOptions.expires
+        });
+    } catch (error) {
+        logout(req, res);
+
+        if (error instanceof jwt.TokenExpiredError) {
+            return res.status(401).json({
+                error: "Session expired",
+                code: "refresh_token_expired"
+            });
+        }
+
+        res.status(401).json({
+            error: "Invalid refresh token",
+            code: "invalid_refresh_token"
+        });
+    }
+});
+
+// ======================
+// Pets Routes
+// ======================
+router.post("/pet", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        const {name, breed, age, gender, ownerId, description, careSuggestions, animalType} = req.body;
+
+        if (!name || !animalType) {
+            return res.status(400).json({
+                error: "Missing required fields",
+                code: "missing_required_fields"
+            });
+        }
+
+        const newPet = {
+            id: pets.length ? Math.max(...pets.map(p => p.id)) + 1 : 1,
+            name,
+            breed,
+            age,
+            gender,
+            ownerId: ownerId || req.user.id, // Default to current user
+            description,
+            careSuggestions,
+            animalType,
+            createdAt: new Date().toISOString()
+        };
+
+        pets.push(newPet);
+        res.status(201).json({pet: newPet});
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to create pet",
+            code: "pet_creation_failed"
+        });
+    }
+});
+
+router.get("/pets", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        const userPets = pets.filter(pet => pet.ownerId === req.user.id);
+        res.json({pets: userPets});
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to retrieve pets",
+            code: "pet_retrieval_failed"
+        });
+    }
+});
+
+router.get("/pet/:id", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        const pet = pets.find(p =>
+            p.id === parseInt(req.params.id) &&
+            p.ownerId === req.user.id
+        );
+
+        if (!pet) {
+            return res.status(404).json({
+                error: "Pet not found",
+                code: "pet_not_found"
+            });
+        }
+
+        res.json({pet});
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to retrieve pet",
+            code: "pet_retrieval_failed"
+        });
+    }
+});
+
+router.put("/pet/:id", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        const petIndex = pets.findIndex(p =>
+            p.id === parseInt(req.params.id) &&
+            p.ownerId === req.user.id
+        );
+
+        if (petIndex === -1) {
+            return res.status(404).json({
+                error: "Pet not found",
+                code: "pet_not_found"
+            });
+        }
+
+        const updatedPet = {
+            ...pets[petIndex],
+            ...req.body,
+            id: parseInt(req.params.id), // Prevent ID modification
+            ownerId: pets[petIndex].ownerId // Prevent owner reassignment
+        };
+
+        pets[petIndex] = updatedPet;
+        res.json({pet: updatedPet});
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to update pet",
+            code: "pet_update_failed"
+        });
+    }
+});
+
+router.delete("/pet/:id", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        const petIndex = pets.findIndex(p =>
+            p.id === parseInt(req.params.id) &&
+            p.ownerId === req.user.id
+        );
+
+        if (petIndex === -1) {
+            return res.status(404).json({
+                error: "Pet not found",
+                code: "pet_not_found"
+            });
+        }
+
+        const [deletedPet] = pets.splice(petIndex, 1);
+        res.json({pet: deletedPet});
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to delete pet",
+            code: "pet_deletion_failed"
+        });
+    }
+});
+
+// ======================
+// Tasks Routes
+// ======================
+router.post("/task", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        const {title, description, priority, dueDate} = req.body;
+
+        if (!title) {
+            return res.status(400).json({
+                error: "Missing required title",
+                code: "missing_required_field"
+            });
+        }
+
+        const newTask = {
+            id: tasks.length ? Math.max(...tasks.map(t => t.id)) + 1 : 1,
+            title,
+            description,
+            priority: priority || "medium",
+            dueDate,
+            completed: false,
+            ownerId: req.user.id,
+            createdAt: new Date().toISOString()
+        };
+
+        tasks.push(newTask);
+        res.status(201).json({task: newTask});
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to create task",
+            code: "task_creation_failed"
+        });
+    }
+});
+
+router.get("/tasks", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        const userTasks = tasks.filter(task => task.ownerId === req.user.id);
+        res.json({tasks: userTasks});
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to retrieve tasks",
+            code: "task_retrieval_failed"
+        });
+    }
+});
+
+router.get("/task/:id", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        const task = tasks.find(t =>
+            t.id === parseInt(req.params.id) &&
+            t.ownerId === req.user.id
+        );
+
+        if (!task) {
+            return res.status(404).json({
+                error: "Task not found",
+                code: "task_not_found"
+            });
+        }
+
+        res.json({task});
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to retrieve task",
+            code: "task_retrieval_failed"
+        });
+    }
+});
+
+router.put("/task/:id", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        const taskIndex = tasks.findIndex(t =>
+            t.id === parseInt(req.params.id) &&
+            t.ownerId === req.user.id
+        );
+
+        if (taskIndex === -1) {
+            return res.status(404).json({
+                error: "Task not found",
+                code: "task_not_found"
+            });
+        }
+
+        const updatedTask = {
+            ...tasks[taskIndex],
+            ...req.body,
+            id: parseInt(req.params.id), // Prevent ID modification
+            ownerId: tasks[taskIndex].ownerId // Prevent owner reassignment
+        };
+
+        tasks[taskIndex] = updatedTask;
+        res.json({task: updatedTask});
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to update task",
+            code: "task_update_failed"
+        });
+    }
+});
+
+router.delete("/task/:id", validateCsrfToken, validateAccessToken, (req, res) => {
+    try {
+        const taskIndex = tasks.findIndex(t =>
+            t.id === parseInt(req.params.id) &&
+            t.ownerId === req.user.id
+        );
+
+        if (taskIndex === -1) {
+            return res.status(404).json({
+                error: "Task not found",
+                code: "task_not_found"
+            });
+        }
+
+        const [deletedTask] = tasks.splice(taskIndex, 1);
+        res.json({task: deletedTask});
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to delete task",
+            code: "task_deletion_failed"
+        });
+    }
+});
+
+api.use("/api/", router);
+
+api.listen(port, () => {
+    console.log("Server listening on port: " + port);
+});
+
+export const handler = serverless(api);
