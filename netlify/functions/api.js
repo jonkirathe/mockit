@@ -396,7 +396,7 @@ api.listen(port, () => {
 
 export const handler = serverless(api);
 
-// In-memory data (initialized with your JSON data)
+// In-memory database (initialized with your JSON data)
 const users = [
     {
         "id": 1,
