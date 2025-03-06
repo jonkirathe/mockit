@@ -410,7 +410,7 @@ const users = [
         "id": 2,
         "names": "Mary Ann",
         "email": "user2@example.com",
-        "address": "10 Nairobi Kenya",
+        "address": "10 Mombasa Kenya",
         "password": "password@123",
         "date": 7845555
     }
