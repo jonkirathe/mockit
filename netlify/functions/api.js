@@ -25,7 +25,7 @@ const cookieOptions = {
     secure: process.env.NODE_ENV === "production",
     sameSite: "Strict",
     expires: new Date(Date.now() + 15 * 60 * 1000)
-}
+};
 
 const allowedOrigins = [
     ...(process.env.ALLOWED_ORIGINS?.split(',') || []),
@@ -35,7 +35,6 @@ const allowedOrigins = [
 ];
 
 // Middleware setup
-// Disable CSP in development for easier debugging
 if (process.env.NODE_ENV === 'development') {
     api.use(
         helmet({
@@ -44,7 +43,6 @@ if (process.env.NODE_ENV === 'development') {
         })
     );
 } else {
-    // Customized Helmet configuration
     api.use(
         helmet({
             contentSecurityPolicy: {
@@ -57,7 +55,7 @@ if (process.env.NODE_ENV === 'development') {
                 }
             },
             hsts: {
-                maxAge: 63072000, // 2 years in seconds
+                maxAge: 63072000,
                 includeSubDomains: true,
                 preload: true
             },
@@ -65,18 +63,23 @@ if (process.env.NODE_ENV === 'development') {
         })
     );
 }
+
 api.use(express.json());
 api.use(cookieParser());
 api.use(morgan("combined"));
+api.use('/public', cors({
+    origin: process.env.NODE_ENV === 'production'
+        ? process.env.ALLOWED_ORIGINS.split(',')
+        : true,
+    credentials: true
+}));
+
 api.use(
     cors({
         origin: (origin, callback) => {
+            // Allow requests with no origin (e.g., same-origin or non-browser clients)
             if (!origin) {
-                // Allow non-browser clients in development
-                if (process.env.NODE_ENV === 'development') {
-                    return callback(null, true);
-                }
-                return callback(new Error('Origin required in production'));
+                return callback(null, process.env.NODE_ENV === 'development');
             }
 
             // Validate protocol in production
@@ -85,7 +88,6 @@ api.use(
             }
 
             const isAllowed = allowedOrigins.some(allowedOrigin => {
-                // Allow wildcard subdomains
                 if (allowedOrigin.startsWith('*.')) {
                     const domain = allowedOrigin.replace('*.', '');
                     return origin.endsWith(domain);
@@ -94,10 +96,8 @@ api.use(
             });
 
             if (isAllowed) {
-                console.log(`Allowed origin: ${origin}`);
                 callback(null, true);
             } else {
-                console.warn(`Blocked origin: ${origin}`);
                 callback(new Error(`Origin ${origin} not allowed`));
             }
         },
@@ -105,7 +105,7 @@ api.use(
         optionsSuccessStatus: 200
     })
 );
-api.use(express.static("public"));
+
 api.use(
     session({
         secret: process.env.SECRET_KEY,
@@ -113,16 +113,17 @@ api.use(
         saveUninitialized: true,
         cookie: {
             secure: process.env.NODE_ENV === "production",
-            sameSite: "Strict"
+            sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax" // Adjusted here
         }
     })
 );
 
+api.use("/api", router);
+api.use(express.static("public"));
+
 if (process.env.NODE_ENV === 'production') {
     api.use((req, res, next) => {
         const userAgent = req.headers['user-agent'];
-
-        // Block common API client user-agents
         const blockedClients = [
             'PostmanRuntime',
             'curl',
@@ -141,8 +142,8 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-// Security middleware
 const generateCsrfToken = () => crypto.randomBytes(32).toString("hex");
+
 api.use((req, res, next) => {
     if (!req.session.csrfToken) {
         req.session.csrfToken = generateCsrfToken();
@@ -150,7 +151,6 @@ api.use((req, res, next) => {
     next();
 });
 
-// Rate limiting
 const authLimiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 5,
@@ -173,7 +173,6 @@ const apiLimiter = rateLimit({
     }
 });
 
-// Enhanced CSRF validation
 const logSecurityEvent = (req, eventType) => {
     console.log(`Security Event: ${eventType}`, {
         ip: req.ip,
@@ -210,7 +209,6 @@ const validateCsrfToken = (req, res, next) => {
     next();
 };
 
-// Token management
 const generateTokens = (user) => {
     const accessToken = jwt.sign(
         {id: user.id, email: user.email, role: user.role},
@@ -231,7 +229,6 @@ const generateTokens = (user) => {
     };
 };
 
-// Authentication middleware
 const validateAccessToken = (req, res, next) => {
     const token = req.cookies.accessToken;
 
@@ -290,7 +287,6 @@ const handleTokenRefresh = (req, res, next) => {
     });
 };
 
-// Password validation
 const validatePasswordComplexity = (password) => {
     const complexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!complexityRegex.test(password)) {
@@ -298,7 +294,6 @@ const validatePasswordComplexity = (password) => {
     }
 };
 
-// Apply rate limits
 router.use('/signin', authLimiter);
 router.use('/signup', authLimiter);
 router.use("/api", apiLimiter);
@@ -1332,8 +1327,22 @@ const pets = [
 ];
 
 // Routes
-router.get("/csrf-token", (req, res) => {
-    res.json({csrfToken: req.session.csrfToken});
+router.get('/csrf-token', (req, res) => {
+    try {
+        if (!req.session.csrfToken) {
+            req.session.csrfToken = generateCsrfToken();
+        }
+
+        res.json({
+            csrfToken: req.session.csrfToken,
+            expires: new Date(Date.now() + 3600000) // 1 hour
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: "CSRF token generation failed",
+            code: "csrf_failure"
+        });
+    }
 });
 
 router.get("/check", validateCsrfToken, (req, res) => {
@@ -1424,34 +1433,28 @@ router.post("/signup", validateCsrfToken, (req, res) => {
     });
 });
 
-// Protected routes
 router.post("/logout", validateCsrfToken, validateAccessToken, (req, res) => {
     try {
-        // Security logging
         console.log(`User logout initiated:`, {
             userId: req.user.id,
             ip: req.ip,
             userAgent: req.headers["user-agent"]
         });
 
-        // Perform logout operations
         logout(req, res);
 
-        // Standardized success response
         res.status(200).json({
             success: true,
             code: "logout_success",
             message: "Successfully logged out"
         });
     } catch (error) {
-        // Error logging
         console.error("Logout failed:", {
             userId: req.user?.id,
             error: error.message,
             stack: error.stack
         });
 
-        // Force cleanup on failure
         res.clearCookie("accessToken");
         res.clearCookie("refreshToken");
 
@@ -1463,7 +1466,6 @@ router.post("/logout", validateCsrfToken, validateAccessToken, (req, res) => {
     }
 });
 
-// Updated logout function
 function logout(req, res) {
     res.clearCookie("accessToken", cookieOptions);
     res.clearCookie("refreshToken", cookieOptions);
@@ -1474,7 +1476,6 @@ function logout(req, res) {
         });
     }
 
-    // Add token invalidation
     if (req.cookies.accessToken) {
         tokenBlacklist.add(req.cookies.accessToken);
     }
@@ -1494,7 +1495,6 @@ router.get("/user", validateCsrfToken, validateAccessToken, (req, res) => {
             });
         }
 
-        // Sanitize user data before sending
         const userData = {
             id: user.id,
             names: user.names,
@@ -1537,11 +1537,10 @@ router.post("/refresh", validateCsrfToken, (req, res) => {
 
         const {accessToken, refreshToken: newRefreshToken, cookieOptions} = generateTokens(user);
 
-        // Set new cookies
         res.cookie("accessToken", accessToken, cookieOptions);
         res.cookie("refreshToken", newRefreshToken, {
             ...cookieOptions,
-            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         });
 
         res.status(200).json({
@@ -1817,7 +1816,7 @@ router.delete("/task/:id", validateCsrfToken, validateAccessToken, (req, res) =>
     }
 });
 
-api.use("/api/", router);
+// api.use("/api/", router);
 
 api.listen(port, () => {
     console.log("Server listening on port: " + port);
