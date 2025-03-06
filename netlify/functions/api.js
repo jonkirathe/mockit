@@ -113,6 +113,25 @@ function logout(req, res) {
     if (req.session) req.session.csrfToken = null;
 }
 
+const users = [
+    {
+        "id": 1,
+        "names": "John Doe",
+        "email": "user@example.com",
+        "address": "147 Nairobi Kenya",
+        "password": "password@123",
+        "date": 7845555
+    },
+    {
+        "id": 2,
+        "names": "Mary Ann",
+        "email": "user2@example.com",
+        "address": "10 Mombasa Kenya",
+        "password": "password@123",
+        "date": 7845555
+    }
+];
+
 // Routes
 
 router.post("/signin", validateCsrfToken, (req, res) => {
@@ -397,24 +416,7 @@ api.listen(port, () => {
 export const handler = serverless(api);
 
 // In-memory database (initialized with your JSON data)
-const users = [
-    {
-        "id": 1,
-        "names": "John Doe",
-        "email": "user@example.com",
-        "address": "147 Nairobi Kenya",
-        "password": "password@123",
-        "date": 7845555
-    },
-    {
-        "id": 2,
-        "names": "Mary Ann",
-        "email": "user2@example.com",
-        "address": "10 Mombasa Kenya",
-        "password": "password@123",
-        "date": 7845555
-    }
-];
+
 
 const tasks = [
     {
