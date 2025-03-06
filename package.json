@@ -4,15 +4,20 @@
   "main": "netlify/functions/api.js",
   "type": "module",
   "scripts": {
-    "start": "node netlify/functions/api.js",
+    "start": "nodemon src/api.js",
     "build": "npm install && npm run start"
   },
   "dependencies": {
+    "@huggingface/inference": "^2.8.0",
     "@netlify/functions": "^2.8.1",
-    "@netlify/open-api": "^2.34.0",
     "@types/express": "^4.17.21",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "express": "^4.19.2",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.5",
+    "express": "5.0.0",
+    "express-rate-limit": "^7.4.0",
+    "express-session": "^1.18.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "serverless-http": "^3.2.0",
