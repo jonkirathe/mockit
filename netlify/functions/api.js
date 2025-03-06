@@ -112,7 +112,8 @@ api.use(
         resave: false,
         saveUninitialized: true,
         cookie: {
-            secure: process.env.NODE_ENV === "production",
+            secure: false,
+            // secure: process.env.NODE_ENV === "production",
             sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax" // Adjusted here
         }
     })
