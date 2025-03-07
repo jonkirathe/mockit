@@ -1355,7 +1355,8 @@ router.post("/signin", validateCsrfToken, (req, res) => {
 
         if (!user || !bcrypt.compareSync(password, user.password)) {
             return res.status(401).json({
-                error: `Authentication failed: password ${password} user.password ${user.password} bcrypt.compareSync(password, user.password ${bcrypt.compareSync(password, user.password)} `,
+                error: `Authentication failed: password: ${password}`,
+                // error: `Authentication failed: password ${password} user.password ${user.password} bcrypt.compareSync(password, user.password ${bcrypt.compareSync(password, user.password)} `,
                 code: "invalid_credentials"
             });
         }
