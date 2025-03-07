@@ -68,8 +68,22 @@ api.use(express.json());
 api.use(express.urlencoded({ extended: true }));
 api.use(cookieParser());
 api.use(morgan("combined"));
-
+// ALLOW ALL ORIGINS[all request from any domain]
 api.use(
+    cors({
+        origin: (origin, callback) => {
+            // Allow all origins but require HTTPS in production
+            if (process.env.NODE_ENV === 'production' && origin && !origin.startsWith('https://')) {
+                return callback(new Error('HTTPS required'));
+            }
+            callback(null, true);
+        },
+        credentials: true,
+        optionsSuccessStatus: 200
+    })
+);
+// ALL ONLY SPECIFIED domain to connect
+/*api.use(
     cors({
         origin: (origin, callback) => {
             // Allow requests with no origin (e.g., same-origin or non-browser clients)
@@ -99,7 +113,7 @@ api.use(
         credentials: true,
         optionsSuccessStatus: 200
     })
-);
+);*/
 api.use(
     session({
         secret: process.env.SECRET_KEY,
@@ -145,12 +159,12 @@ api.use((req, res, next) => {
     next();
 });
 
-api.use((req, res, next) => {
-    if (Buffer.isBuffer(req.body)) {
-        req.body = JSON.parse(req.body.toString());
-    }
-    next();
-});
+// api.use((req, res, next) => {
+//     if (Buffer.isBuffer(req.body)) {
+//         req.body = JSON.parse(req.body.toString());
+//     }
+//     next();
+// });
 
 const authLimiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,

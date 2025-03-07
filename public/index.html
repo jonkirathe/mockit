@@ -84,7 +84,7 @@
             <div class="demo-step">
                 <h3>2. Sign In</h3>
                 <div class="token-info" id="signin-info"></div>
-                <button class="demo-button success" onclick="signIn()">Sign In (test@example.com)</button>
+                <button class="demo-button success" onclick="signIn()">Sign In (EMAIL: user@example.com, pass: password@123)</button>
             </div>
 
             <div class="demo-step">
@@ -377,7 +377,7 @@ Response (200 OK):
 
     async function getCsrfToken() {
         try {
-            const response = await fetch('/csrf-token', {credentials: 'include'});
+            const response = await fetch('https://mockit-server.netlify.app/api/csrf-token', {credentials: 'include'});
             const data = await response.json();
             csrfToken = data.csrfToken;
             document.getElementById('csrf-token-info').innerHTML = `
@@ -392,15 +392,15 @@ Response (200 OK):
 
     async function signIn() {
         try {
-            const response = await fetch('/signin', {
+            const response = await fetch('https://mockit-server.netlify.app/api/signin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-Token': csrfToken
                 },
                 body: JSON.stringify({
-                    email: 'test@example.com',
-                    password: 'password123'
+                    email: 'user@example.com',
+                    password: 'password@123'
                 }),
                 credentials: 'include'
             });
@@ -418,7 +418,7 @@ Response (200 OK):
 
     async function getUser() {
         try {
-            const response = await fetch('/user/1', {
+            const response = await fetch('https://mockit-server.netlify.app/api/user/1', {
                 headers: {'X-CSRF-Token': csrfToken},
                 credentials: 'include'
             });
