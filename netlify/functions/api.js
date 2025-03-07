@@ -1363,7 +1363,6 @@ router.post("/signin", validateCsrfToken, (req, res) => {
         }
 
         const {accessToken, refreshToken, cookieOptions} = generateTokens(user);
-
         res.cookie("accessToken", accessToken, cookieOptions);
         res.cookie("refreshToken", refreshToken, {
             ...cookieOptions,
