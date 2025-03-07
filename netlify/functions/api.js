@@ -1353,16 +1353,23 @@ router.post("/signin", validateCsrfToken, (req, res) => {
         const {email, password} = req.body;
         const user = users.find(u => u.email === email);
 
-        if (!user || !bcrypt.compareSync(password, user.password)) {
+        return res.status(401).json({
+            error: `Authentication failed: password ${password} user.password ${user.password} `,
+            // error: `Authentication failed: password: ${password}`,
+            // error: `Authentication failed: password ${password} user.password ${user.password} bcrypt.compareSync(password, user.password ${bcrypt.compareSync(password, user.password)} `,
+            code: "invalid_credentials"
+        });
+
+       /* if (!user || !bcrypt.compareSync(password, user.password)) {
             return res.status(401).json({
                 error: `Authentication failed: user.password ${user.password}`,
                 // error: `Authentication failed: password: ${password}`,
                 // error: `Authentication failed: password ${password} user.password ${user.password} bcrypt.compareSync(password, user.password ${bcrypt.compareSync(password, user.password)} `,
                 code: "invalid_credentials"
             });
-        }
+        }*/
 
-        const {accessToken, refreshToken, cookieOptions} = generateTokens(user);
+        /*const {accessToken, refreshToken, cookieOptions} = generateTokens(user);
         res.cookie("accessToken", accessToken, cookieOptions);
         res.cookie("refreshToken", refreshToken, {
             ...cookieOptions,
@@ -1377,7 +1384,7 @@ router.post("/signin", validateCsrfToken, (req, res) => {
                 address: user.address,
                 role: user.role
             }
-        });
+        });*/
     } catch (error) {
         res.status(500).json({
             error: "Failed to login user: " + error,
