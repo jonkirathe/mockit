@@ -6,7 +6,7 @@ import session from "express-session";
 import dotenv from "dotenv";
 import { PORT, ALLOWED_ORIGINS } from "./config/constants.js";
 import { setupHelmet } from "./config/security.js";
-import { apiLimiter } from "./middleware/rateLimiter.js";
+import { apiLimiter } from "./config/rate-limits.js";
 import authRoutes from "./routes/auth.js";
 import petRoutes from "./routes/pets.js";
 import taskRoutes from "./routes/tasks.js";
