@@ -1485,7 +1485,7 @@ function logout(req, res) {
 
 router.get("/user/:id", validateCsrfToken, (req, res) => {
     try {
-        const user = users.find((u) => u.id === req.user.id);
+        const user = users.find((u) => u.id === Number(req.params.id));
 
         if (!user) {
             return res.status(404).json({
