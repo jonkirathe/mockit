@@ -65,14 +65,9 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 api.use(express.json());
+api.use(express.urlencoded({ extended: true }));
 api.use(cookieParser());
 api.use(morgan("combined"));
-api.use('/public', cors({
-    origin: process.env.NODE_ENV === 'production'
-        ? process.env.ALLOWED_ORIGINS.split(',')
-        : true,
-    credentials: true
-}));
 
 api.use(
     cors({
@@ -105,7 +100,6 @@ api.use(
         optionsSuccessStatus: 200
     })
 );
-
 api.use(
     session({
         secret: process.env.SECRET_KEY,
@@ -118,7 +112,6 @@ api.use(
         }
     })
 );
-
 api.use("/api", router);
 api.use(express.static("public"));
 
@@ -148,6 +141,13 @@ const generateCsrfToken = () => crypto.randomBytes(32).toString("hex");
 api.use((req, res, next) => {
     if (!req.session.csrfToken) {
         req.session.csrfToken = generateCsrfToken();
+    }
+    next();
+});
+
+api.use((req, res, next) => {
+    if (Buffer.isBuffer(req.body)) {
+        req.body = JSON.parse(req.body.toString());
     }
     next();
 });
@@ -1349,27 +1349,21 @@ router.get("/check", validateCsrfToken, (req, res) => {
 });
 
 router.post("/signin", validateCsrfToken, (req, res) => {
-    // try {
+    try {
+        if (Buffer.isBuffer(req.body)) {
+            req.body = JSON.parse(req.body.toString());
+        }
         const {email, password} = req.body;
         const user = users.find(u => u.email === email);
 
-        return res.status(401).json({
-            error: `Authentication failed: password ${password} user.password ${user.password} `,
-            // error: `Authentication failed: password: ${password}`,
-            // error: `Authentication failed: password ${password} user.password ${user.password} bcrypt.compareSync(password, user.password ${bcrypt.compareSync(password, user.password)} `,
-            code: "invalid_credentials"
-        });
-
-       /* if (!user || !bcrypt.compareSync(password, user.password)) {
+        if (!user || !bcrypt.compareSync(password, user.password)) {
             return res.status(401).json({
-                error: `Authentication failed: user.password ${user.password}`,
-                // error: `Authentication failed: password: ${password}`,
-                // error: `Authentication failed: password ${password} user.password ${user.password} bcrypt.compareSync(password, user.password ${bcrypt.compareSync(password, user.password)} `,
+                error: `Authentication failed`,
                 code: "invalid_credentials"
             });
-        }*/
+        }
 
-        /*const {accessToken, refreshToken, cookieOptions} = generateTokens(user);
+        const {accessToken, refreshToken, cookieOptions} = generateTokens(user);
         res.cookie("accessToken", accessToken, cookieOptions);
         res.cookie("refreshToken", refreshToken, {
             ...cookieOptions,
@@ -1384,16 +1378,19 @@ router.post("/signin", validateCsrfToken, (req, res) => {
                 address: user.address,
                 role: user.role
             }
-        });*/
-    // } catch (error) {
-    //     res.status(500).json({
-    //         error: "Failed to login user: " + error,
-    //         code: "failed_to_login_user"
-    //     });
-    // }
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to login user: " + error,
+            code: "failed_to_login_user"
+        });
+    }
 });
 
 router.post("/signup", validateCsrfToken, (req, res) => {
+    if (Buffer.isBuffer(req.body)) {
+        req.body = JSON.parse(req.body.toString());
+    }
     const {username, email, password, passwordConfirmation} = req.body;
 
     if (password !== passwordConfirmation) {
@@ -1583,6 +1580,9 @@ router.post("/refresh", validateCsrfToken, (req, res) => {
 // ======================
 router.post("/pet", validateCsrfToken, validateAccessToken, (req, res) => {
     try {
+        if (Buffer.isBuffer(req.body)) {
+            req.body = JSON.parse(req.body.toString());
+        }
         const {name, breed, age, gender, ownerId, description, careSuggestions, animalType} = req.body;
 
         if (!name || !animalType) {
@@ -1652,6 +1652,9 @@ router.get("/pet/:id", validateCsrfToken, validateAccessToken, (req, res) => {
 
 router.put("/pet/:id", validateCsrfToken, validateAccessToken, (req, res) => {
     try {
+        if (Buffer.isBuffer(req.body)) {
+            req.body = JSON.parse(req.body.toString());
+        }
         const petIndex = pets.findIndex(p =>
             p.id === parseInt(req.params.id) &&
             p.ownerId === req.user.id
@@ -1710,6 +1713,9 @@ router.delete("/pet/:id", validateCsrfToken, validateAccessToken, (req, res) => 
 // ======================
 router.post("/task", validateCsrfToken, validateAccessToken, (req, res) => {
     try {
+        if (Buffer.isBuffer(req.body)) {
+            req.body = JSON.parse(req.body.toString());
+        }
         const {title, description, priority, dueDate} = req.body;
 
         if (!title) {
@@ -1777,6 +1783,9 @@ router.get("/task/:id", validateCsrfToken, validateAccessToken, (req, res) => {
 
 router.put("/task/:id", validateCsrfToken, validateAccessToken, (req, res) => {
     try {
+        if (Buffer.isBuffer(req.body)) {
+            req.body = JSON.parse(req.body.toString());
+        }
         const taskIndex = tasks.findIndex(t =>
             t.id === parseInt(req.params.id) &&
             t.ownerId === req.user.id

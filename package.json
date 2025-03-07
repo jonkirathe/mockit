@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "nodemon src/api.js",
+    "dev": "netlify dev",
     "build": "npm install && npm run start"
   },
   "dependencies": {
