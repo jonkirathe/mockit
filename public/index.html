@@ -5,131 +5,465 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mockit Server</title>
     <link rel="stylesheet" href="/styles.css">
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const socket = io();
-            const logContainer = document.getElementById('log-container');
+    <style>
+        /* Additional CSS for enhanced UI */
+        .demo-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
 
-            socket.on('log', (message) => {
-                const logEntry = document.createElement('div');
-                logEntry.className = 'log-entry';
-                logEntry.textContent = message;
-                logContainer.appendChild(logEntry);
-                logContainer.scrollTop = logContainer.scrollHeight;
-            });
-        });
-    </script>
+        .demo-step {
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+        }
+
+        .demo-button.primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .demo-button.success {
+            background: #28a745;
+            color: white;
+        }
+
+        .demo-button.warning {
+            background: #ffc107;
+            color: black;
+        }
+
+        .demo-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .token-info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
     <header>
-        <h1>Welcome to the Mockit Server</h1>
-        <p>This is an open-source Mockit server that can be used by developers to simulate API endpoints for testing and development purposes.</p>
-<!--        <p>For interactive API documentation, visit the <a href="/api-docs" target="_blank">Swagger API Documentation</a>.</p>-->
+        <h1>Welcome to Mockit Server</h1>
+        <p>A secure API mock server with CSRF protection and JWT authentication</p>
     </header>
+
     <main>
-        <section>
-            <h2>About This Project</h2>
-            <p>This Mockit server provides a simple and flexible way to create and manage Mockit API endpoints. It supports authentication, token refresh, and user management, making it ideal for testing and development.</p>
-            <p>Key Features:</p>
-            <ul>
-                <li>Easy to set up and use</li>
-                <li>Supports JWT authentication</li>
-                <li>Real-time request logging</li>
-                <li>Interactive API documentation with Swagger UI</li>
-            </ul>
-            <p>We encourage developers to contribute to this project and help make it even better. Your contributions can help add new features, improve existing functionality, and fix bugs.</p>
-            <p>Check out the project on GitHub and join our community:</p>
-            <p><a href="https://github.com/jonkirathe/mockit" target="_blank">GitHub Repository</a></p>
-            <p>Let's collaborate and make this project grow!</p>
+        <section class="demo-section">
+            <h2>API Demo Flow</h2>
+            <div class="demo-step">
+                <h3>1. Get CSRF Token</h3>
+                <button class="demo-button primary" onclick="getCsrfToken()">Get CSRF Token</button>
+                <div class="token-info" id="csrf-token-info"></div>
+            </div>
+
+            <div class="demo-step">
+                <h3>2. Sign In</h3>
+                <div class="token-info" id="signin-info"></div>
+                <button class="demo-button success" onclick="signIn()">Sign In (test@example.com)</button>
+            </div>
+
+            <div class="demo-step">
+                <h3>3. Access Protected Endpoints</h3>
+                <button class="demo-button warning" onclick="getUser()">Get User Profile</button>
+                <button class="demo-button warning" onclick="createPet()">Create Pet</button>
+                <button class="demo-button warning" onclick="createTask()">Create Task</button>
+                <button class="demo-button warning" onclick="logout()">Logout</button>
+            </div>
+
+            <pre id="demo-output" class="demo-output"></pre>
         </section>
+
         <section>
             <h2>API Documentation</h2>
-            <p>Below are the available API endpoints:</p>
+
             <div class="endpoint">
-                <h3>POST /api/signin</h3>
-                <p>Sign in a user</p>
-                <pre>
+                <h3>GET /csrf-token</h3>
+                <p>Get CSRF token for form submission protection</p>
+                <pre>Response:
+{
+  "csrfToken": "string",
+  "expires": "ISO date"
+}</pre>
+            </div>
+
+            <div class="endpoint">
+                <h3>POST /signin</h3>
+                <p>Authenticate user (requires CSRF token)</p>
+                <pre>Request Headers:
+X-CSRF-Token: &lt;csrf-token&gt;
+
 Request Body:
 {
   "email": "string",
   "password": "string"
 }
 
-Responses:
-200: Successful sign in
-401: Invalid email or password
-                </pre>
+Response Cookies:
+accessToken, refreshToken</pre>
             </div>
-            <div class="endpoint">
-                <h3>POST /api/signup</h3>
-                <p>Sign up a new user</p>
-                <pre>
-Request Body:
-{
-  "email": "string",
-  "password": "string"
-}
 
-Responses:
-201: User created successfully
-409: User already exists
-                </pre>
-            </div>
             <div class="endpoint">
-                <h3>GET /api/user</h3>
-                <p>Get authenticated user details</p>
-                <pre>
+                <h3>POST /signup</h3>
+                <p>Register new user (requires CSRF token)</p>
+                <pre>Request Body:
+{
+  "username": "string",
+  "email": "string",
+  "password": "string",
+  "passwordConfirmation": "string"
+}</pre>
+            </div>
+
+            <div class="endpoint">
+                <h3>POST /logout</h3>
+                <p>Invalidate user session</p>
+                <pre>Response:
+Clears authentication cookies</pre>
+            </div>
+
+            <div class="endpoint">
+                <h3>Pet Management Endpoints</h3>
+
+                <div class="endpoint">
+                    <h3>POST /pet</h3>
+                    <p>Create a new pet (requires CSRF token and authentication)</p>
+                    <pre>
 Headers:
-Authorization: Bearer <token>
+X-CSRF-Token: &lt;csrf-token&gt;
+Content-Type: application/json
 
-Responses:
-200: User details retrieved successfully
-401: Invalid token
-404: User not found
-                </pre>
-            </div>
-            <div class="endpoint">
-                <h3>POST /api/refresh</h3>
-                <p>Refresh access token</p>
-                <pre>
 Request Body:
 {
-  "refreshToken": "string"
+  "name": "string (required)",
+  "breed": "string",
+  "age": "number",
+  "gender": "string",
+  "ownerId": "number",
+  "description": "string",
+  "careSuggestions": "string",
+  "animalType": "string (required)"
 }
 
-Responses:
-200: Token refreshed successfully
-401: Invalid refresh token
-                </pre>
+Response (201 Created):
+{
+  "pet": {
+    "id": 1,
+    "name": "Buddy",
+    "breed": "Golden Retriever",
+    "age": 3,
+    "ownerId": 1,
+    "createdAt": "2024-02-20T12:34:56.789Z"
+  }
+}</pre>
+                </div>
+
+                <div class="endpoint">
+                    <h3>GET /pets</h3>
+                    <p>Get all pets for current user (requires authentication)</p>
+                    <pre>
+Response (200 OK):
+{
+  "pets": [
+    {
+      "id": 1,
+      "name": "Buddy",
+      "animalType": "Dog",
+      "ownerId": 1
+    }
+  ]
+}</pre>
+                </div>
+
+                <div class="endpoint">
+                    <h3>GET /pet/:id</h3>
+                    <p>Get specific pet details (requires authentication)</p>
+                    <pre>
+Path Parameters:
+:id - Pet ID (number)
+
+Response (200 OK):
+{
+  "pet": {
+    "id": 1,
+    "name": "Buddy",
+    "breed": "Golden Retriever",
+    "age": 3,
+    "careSuggestions": "Regular brushing needed",
+    "createdAt": "2024-02-20T12:34:56.789Z"
+  }
+}
+
+Error (404 Not Found):
+{
+  "error": "Pet not found",
+  "code": "pet_not_found"
+}</pre>
+                </div>
+
+                <div class="endpoint">
+                    <h3>PUT /pet/:id</h3>
+                    <p>Update existing pet (requires CSRF token and authentication)</p>
+                    <pre>
+Headers:
+X-CSRF-Token: &lt;csrf-token&gt;
+Content-Type: application/json
+
+Request Body:
+{
+  "name": "Updated Name",
+  "age": 4,
+  "careSuggestions": "New care instructions"
+}
+
+Response (200 OK):
+{
+  "pet": {
+    "id": 1,
+    "name": "Updated Name",
+    "age": 4,
+    ...
+  }
+}</pre>
+                </div>
+
+                <div class="endpoint">
+                    <h3>DELETE /pet/:id</h3>
+                    <p>Delete a pet (requires CSRF token and authentication)</p>
+                    <pre>
+Response (200 OK):
+{
+  "pet": {
+    "id": 1,
+    "name": "Buddy",
+    ...
+  }
+}</pre>
+                </div>
             </div>
+
             <div class="endpoint">
-                <h3>GET /api/check</h3>
-                <p>Check if the server is working</p>
-                <pre>
-Responses:
-200: Server is working
-                </pre>
-            </div>
-            <div class="endpoint">
-                <h3>GET /api/users</h3>
-                <p>Get all users</p>
-                <pre>
-Responses:
-200: List of users retrieved successfully
-                </pre>
+                <h3>Task Management Endpoints</h3>
+
+                <div class="endpoint">
+                    <h3>POST /task</h3>
+                    <p>Create new task (requires CSRF token and authentication)</p>
+                    <pre>
+Headers:
+X-CSRF-Token: &lt;csrf-token&gt;
+Content-Type: application/json
+
+Request Body:
+{
+  "title": "string (required)",
+  "description": "string",
+  "priority": "low|medium|high",
+  "dueDate": "ISO date string"
+}
+
+Response (201 Created):
+{
+  "task": {
+    "id": 1,
+    "title": "Buy pet food",
+    "priority": "high",
+    "completed": false,
+    "ownerId": 1,
+    "createdAt": "2024-02-20T12:34:56.789Z"
+  }
+}</pre>
+                </div>
+
+                <div class="endpoint">
+                    <h3>GET /tasks</h3>
+                    <p>Get all tasks for current user (requires authentication)</p>
+                    <pre>
+Response (200 OK):
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Buy pet food",
+      "completed": false,
+      "dueDate": "2024-02-25"
+    }
+  ]
+}</pre>
+                </div>
+
+                <div class="endpoint">
+                    <h3>PUT /task/:id</h3>
+                    <p>Update existing task (requires CSRF token and authentication)</p>
+                    <pre>
+Headers:
+X-CSRF-Token: &lt;csrf-token&gt;
+Content-Type: application/json
+
+Request Body:
+{
+  "completed": true,
+  "priority": "medium"
+}
+
+Response (200 OK):
+{
+  "task": {
+    "id": 1,
+    "completed": true,
+    "priority": "medium",
+    ...
+  }
+}</pre>
+                </div>
+
+                <div class="endpoint">
+                    <h3>DELETE /task/:id</h3>
+                    <p>Delete a task (requires CSRF token and authentication)</p>
+                    <pre>
+Response (200 OK):
+{
+  "task": {
+    "id": 1,
+    "title": "Buy pet food",
+    ...
+  }
+}</pre>
+                </div>
             </div>
         </section>
-        <!--<section>
-            <div id="log-container" class="log-container">
-                <h2>Request Logs</h2>
-            </div>
-        </section>-->
     </main>
+
     <footer>
-        <p>© 2024 Mockit Server. All rights reserved.</p>
+        <p>© 2024 Mockit Server. Open source on <a href="https://github.com/jonkirathe/mockit">GitHub</a></p>
     </footer>
 </div>
+
+<script>
+    let csrfToken = '';
+    let accessToken = '';
+
+    function logOutput(message, isError = false) {
+        const output = document.getElementById('demo-output');
+        const line = document.createElement('div');
+        line.style.color = isError ? '#ff4444' : '#4CAF50';
+        line.textContent = `> ${new Date().toLocaleTimeString()}: ${message}`;
+        output.appendChild(line);
+        output.scrollTop = output.scrollHeight;
+    }
+
+    async function getCsrfToken() {
+        try {
+            const response = await fetch('/csrf-token', {credentials: 'include'});
+            const data = await response.json();
+            csrfToken = data.csrfToken;
+            document.getElementById('csrf-token-info').innerHTML = `
+                CSRF Token: ${data.csrfToken.slice(0, 15)}...<br>
+                Expires: ${new Date(data.expires).toLocaleString()}
+            `;
+            logOutput('CSRF token received successfully');
+        } catch (error) {
+            logOutput(`Error getting CSRF token: ${error.message}`, true);
+        }
+    }
+
+    async function signIn() {
+        try {
+            const response = await fetch('/signin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({
+                    email: 'test@example.com',
+                    password: 'password123'
+                }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            document.getElementById('signin-info').innerHTML = `
+                Logged in as: ${data.user.email}<br>
+                Role: ${data.user.role}
+            `;
+            logOutput('Sign in successful! User data received');
+        } catch (error) {
+            logOutput(`Sign in failed: ${error.message}`, true);
+        }
+    }
+
+    async function getUser() {
+        try {
+            const response = await fetch('/user/1', {
+                headers: {'X-CSRF-Token': csrfToken},
+                credentials: 'include'
+            });
+            const data = await response.json();
+            logOutput(`User data: ${JSON.stringify(data.user)}`);
+        } catch (error) {
+            logOutput(`Failed to get user: ${error.message}`, true);
+        }
+    }
+
+    async function createPet() {
+        try {
+            const response = await fetch('/pet', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({
+                    name: 'Buddy',
+                    animalType: 'Dog',
+                    age: 3
+                }),
+                credentials: 'include'
+            });
+            const data = await response.json();
+            logOutput(`Pet created: ${JSON.stringify(data.pet)}`);
+        } catch (error) {
+            logOutput(`Pet creation failed: ${error.message}`, true);
+        }
+    }
+
+    async function logout() {
+        try {
+            await fetch('/logout', {
+                method: 'POST',
+                headers: {'X-CSRF-Token': csrfToken},
+                credentials: 'include'
+            });
+            logOutput('Successfully logged out');
+            document.getElementById('signin-info').innerHTML = '';
+        } catch (error) {
+            logOutput(`Logout failed: ${error.message}`, true);
+        }
+    }
+</script>
 </body>
 </html>
