@@ -206,7 +206,6 @@ const validateCsrfToken = (req, res, next) => {
             code: "security_validation_error"
         });
     }
-
     next();
 };
 
