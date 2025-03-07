@@ -91,7 +91,7 @@
                 <h3>3. Access Protected Endpoints</h3>
                 <button class="demo-button warning" onclick="getUser()">Get User Profile</button>
                 <button class="demo-button warning" onclick="createPet()">Create Pet</button>
-                <button class="demo-button warning" onclick="createTask()">Create Task</button>
+<!--                <button class="demo-button warning" onclick="createTask()">Create Task</button>-->
                 <button class="demo-button warning" onclick="logout()">Logout</button>
             </div>
 
@@ -431,7 +431,7 @@ Response (200 OK):
 
     async function createPet() {
         try {
-            const response = await fetch('/pet', {
+            const response = await fetch('https://mockit-server.netlify.app/api/pet', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
