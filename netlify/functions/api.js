@@ -249,7 +249,6 @@ const validateAccessToken = (req, res, next) => {
                 code: "invalid_access_token"
             });
         }
-
         req.user = decoded;
         next();
     });
