@@ -1483,7 +1483,7 @@ function logout(req, res) {
     }
 }
 
-router.get("/user", validateCsrfToken, (req, res) => {
+router.get("/user/:id", validateCsrfToken, (req, res) => {
     try {
         const user = users.find((u) => u.id === req.user.id);
 
