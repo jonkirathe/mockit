@@ -1495,7 +1495,7 @@ function logout(req, res) {
     }
 }
 
-router.get("/user/:id", validateCsrfToken, (req, res) => {
+router.get("/user/:id", validateCsrfToken,validateAccessToken, (req, res) => {
     try {
         const user = users.find((u) => u.id === Number(req.params.id));
 
@@ -1748,8 +1748,8 @@ router.post("/task", validateCsrfToken, validateAccessToken, (req, res) => {
 
 router.get("/tasks", validateCsrfToken, validateAccessToken, (req, res) => {
     try {
-        const userTasks = tasks.filter(task => task.ownerId === req.user.id);
-        res.json({tasks: userTasks});
+        // const userTasks = tasks.filter(task => task.ownerId === req.user.id);
+        res.json({tasks: tasks});
     } catch (error) {
         res.status(500).json({
             error: "Failed to retrieve tasks",
