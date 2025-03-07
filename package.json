@@ -1,12 +1,12 @@
 {
   "name": "mockit",
   "version": "1.0.0",
-  "main": "netlify/functions/api.js",
+  "main": "netlify/functions/serverless/serverless.js",
   "type": "module",
   "scripts": {
-    "start": "nodemon src/api.js",
+    "start": "nodemon src/serverless.js",
     "dev": "netlify dev",
-    "build": "npm install && npm run start"
+    "build": "npm install"
   },
   "dependencies": {
     "@huggingface/inference": "^2.8.0",
