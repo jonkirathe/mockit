@@ -122,26 +122,26 @@ api.use(
 api.use("/api", router);
 api.use(express.static("public"));
 
-if (process.env.NODE_ENV === 'production') {
-    api.use((req, res, next) => {
-        const userAgent = req.headers['user-agent'];
-        const blockedClients = [
-            'PostmanRuntime',
-            'curl',
-            'Insomnia',
-            'Thunder Client'
-        ];
-
-        if (blockedClients.some(client => userAgent?.includes(client))) {
-            return res.status(403).json({
-                error: "API access not allowed through client tools",
-                code: "client_tool_blocked"
-            });
-        }
-
-        next();
-    });
-}
+// if (process.env.NODE_ENV === 'production') {
+//     api.use((req, res, next) => {
+//         const userAgent = req.headers['user-agent'];
+//         const blockedClients = [
+//             'PostmanRuntime',
+//             'curl',
+//             'Insomnia',
+//             'Thunder Client'
+//         ];
+//
+//         if (blockedClients.some(client => userAgent?.includes(client))) {
+//             return res.status(403).json({
+//                 error: "API access not allowed through client tools",
+//                 code: "client_tool_blocked"
+//             });
+//         }
+//
+//         next();
+//     });
+// }
 
 const generateCsrfToken = () => crypto.randomBytes(32).toString("hex");
 
