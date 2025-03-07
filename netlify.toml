@@ -1,8 +1,18 @@
-[functions]
-external_node_modules = ["express"]
-node_bundler = "esbuild"
+#[functions]
+#external_node_modules = ["express"]
+#node_bundler = "esbuild"
+#[[redirects]]
+#force = true
+#from = "/api/*"
+#status = 200
+#to = "/.netlify/functions/api/:splat"
+
+[build]
+command = "npm install && npm run build"
+functions = "netlify/functions"
+publish = "src/public"  # If you have static assets
+
 [[redirects]]
-force = true
-from = "/api/*"
+from = "/*"
+to = "/.netlify/functions/serverless"
 status = 200
-to = "/.netlify/functions/api/:splat"

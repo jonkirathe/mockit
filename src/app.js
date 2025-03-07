@@ -1,0 +1,86 @@
+import express, { Router } from "express";
+import cookieParser from "cookie-parser";
+import morgan from "morgan";
+import cors from "cors";
+import session from "express-session";
+import dotenv from "dotenv";
+import { PORT, ALLOWED_ORIGINS } from "./config/constants.js";
+import { setupHelmet } from "./config/security.js";
+import { apiLimiter } from "./middleware/rateLimiter.js";
+import authRoutes from "./routes/auth.js";
+import petRoutes from "./routes/pets.js";
+import taskRoutes from "./routes/tasks.js";
+import userRoutes from "./routes/users.js";
+import { generateCsrfToken } from "./utils/csrf.js";
+import {validateCsrfToken} from "./middleware/validation.js";
+
+dotenv.config();
+
+const api = express();
+api.set("port", PORT);
+
+// Security headers
+setupHelmet(api);
+
+api.use(express.json());
+api.use(express.urlencoded({ extended: true }));
+api.use(cookieParser());
+api.use(morgan("combined"));
+
+// CORS configuration: allow all origins in development; in production, enforce HTTPS
+api.use(
+    cors({
+        origin: (origin, callback) => {
+            if (process.env.NODE_ENV === "production" && origin && !origin.startsWith("https://")) {
+                return callback(new Error("HTTPS required"));
+            }
+            callback(null, true);
+        },
+        credentials: true,
+        optionsSuccessStatus: 200
+    })
+);
+
+api.use(
+    session({
+        secret: process.env.SECRET_KEY,
+        resave: false,
+        saveUninitialized: true,
+        cookie: {
+            secure: false,
+            sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax"
+        }
+    })
+);
+
+// Initialize CSRF token if missing
+api.use((req, res, next) => {
+    if (!req.session.csrfToken) {
+        req.session.csrfToken = generateCsrfToken();
+    }
+    next();
+});
+
+// Mount routes under /api
+const router = Router();
+router.use("/auth", authRoutes);
+router.use("/pets", petRoutes);
+router.use("/tasks", taskRoutes);
+router.use("/users", userRoutes);
+
+router.get("/health", validateCsrfToken, (req, res) => {
+    res.status(200).json({message: "Health Ok"});
+});
+
+router.use(apiLimiter);
+
+api.use("/api", router);
+
+// Serve static files
+api.use(express.static("public"));
+
+api.listen(PORT, () => {
+    console.log("Server listening on port: " + PORT);
+});
+
+export default api;
