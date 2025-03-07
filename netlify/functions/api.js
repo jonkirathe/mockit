@@ -1349,7 +1349,7 @@ router.get("/check", validateCsrfToken, (req, res) => {
 });
 
 router.post("/signin", validateCsrfToken, (req, res) => {
-    try {
+    // try {
         const {email, password} = req.body;
         const user = users.find(u => u.email === email);
 
@@ -1385,12 +1385,12 @@ router.post("/signin", validateCsrfToken, (req, res) => {
                 role: user.role
             }
         });*/
-    } catch (error) {
-        res.status(500).json({
-            error: "Failed to login user: " + error,
-            code: "failed_to_login_user"
-        });
-    }
+    // } catch (error) {
+    //     res.status(500).json({
+    //         error: "Failed to login user: " + error,
+    //         code: "failed_to_login_user"
+    //     });
+    // }
 });
 
 router.post("/signup", validateCsrfToken, (req, res) => {
