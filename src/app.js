@@ -12,7 +12,6 @@ import petRoutes from "./routes/pets.js";
 import taskRoutes from "./routes/tasks.js";
 import userRoutes from "./routes/users.js";
 import { generateCsrfToken } from "./utils/csrf.js";
-import {validateCsrfToken} from "./middleware/validation.js";
 
 dotenv.config();
 
@@ -68,7 +67,7 @@ router.use("/pets", petRoutes);
 router.use("/tasks", taskRoutes);
 router.use("/users", userRoutes);
 
-router.get("/health", validateCsrfToken, (req, res) => {
+router.get("/health", (req, res) => {
     res.status(200).json({message: "Health Ok"});
 });
 
