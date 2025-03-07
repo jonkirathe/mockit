@@ -1349,33 +1349,40 @@ router.get("/check", validateCsrfToken, (req, res) => {
 });
 
 router.post("/signin", validateCsrfToken, (req, res) => {
-    const {email, password} = req.body;
-    const user = users.find(u => u.email === email);
+    try {
+        const {email, password} = req.body;
+        const user = users.find(u => u.email === email);
 
-    if (!user || !bcrypt.compareSync(password, user.password)) {
-        return res.status(401).json({
-            error: "Authentication failed",
-            code: "invalid_credentials"
+        if (!user || !bcrypt.compareSync(password, user.password)) {
+            return res.status(401).json({
+                error: "Authentication failed",
+                code: "invalid_credentials"
+            });
+        }
+
+        const {accessToken, refreshToken, cookieOptions} = generateTokens(user);
+
+        res.cookie("accessToken", accessToken, cookieOptions);
+        res.cookie("refreshToken", refreshToken, {
+            ...cookieOptions,
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        });
+
+        res.json({
+            user: {
+                id: user.id,
+                names: user.names,
+                email: user.email,
+                address: user.address,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: "Failed to login user: " + error,
+            code: "failed_to_login_user"
         });
     }
-
-    const {accessToken, refreshToken, cookieOptions} = generateTokens(user);
-
-    res.cookie("accessToken", accessToken, cookieOptions);
-    res.cookie("refreshToken", refreshToken, {
-        ...cookieOptions,
-        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    });
-
-    res.json({
-        user: {
-            id: user.id,
-            names: user.names,
-            email: user.email,
-            address: user.address,
-            role: user.role
-        }
-    });
 });
 
 router.post("/signup", validateCsrfToken, (req, res) => {
