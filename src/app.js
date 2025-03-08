@@ -5,8 +5,12 @@ import dotenv from "dotenv";
 import {PORT} from "./config/constants.js";
 // import {setupHelmet} from "./config/security.js";
 // import {apiLimiter} from "./config/rate-limits.js";
-// import * as rateLimits from "./config/rate-limits.js";
-// const { apiLimiter } = rateLimits;
+import authRoutes from "./routes/auth.js";
+import petRoutes from "./routes/pets.js";
+import taskRoutes from "./routes/tasks.js";
+import userRoutes from "./routes/users.js";
+import * as rateLimits from "./config/rate-limits.js";
+const { apiLimiter } = rateLimits;
 
 dotenv.config();
 
@@ -68,24 +72,21 @@ router.get("/health", (req, res) => {
     res.status(200).json({message: "Health Ok"});
 });
 
-// router.use(apiLimiter);
+router.use(apiLimiter);
 
 api.use("/api", router);
 
-// console.log("authRoutes type:", typeof authRoutes);
-// console.log("petRoutes type:", typeof petRoutes);
-// console.log("taskRoutes type:", typeof taskRoutes);
-// console.log("userRoutes type:", typeof userRoutes);
-// console.log("apiLimiter type:", typeof apiLimiter);
+console.log("authRoutes type:", typeof authRoutes);
+console.log("petRoutes type:", typeof petRoutes);
+console.log("taskRoutes type:", typeof taskRoutes);
+console.log("userRoutes type:", typeof userRoutes);
+console.log("apiLimiter type:", typeof apiLimiter);
 
 // Serve static files
 api.use(express.static("public"));
 
-// Only call listen when running locally (not in serverless)
-// if (require.main === module) {
-//     api.listen(PORT, () => {
-//         console.log("Server listening on port: " + PORT);
-//     });
-// }
+api.listen(PORT, () => {
+    console.log("Server listening on port: " + PORT);
+});
 
 export default api;
