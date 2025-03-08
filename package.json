@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "main": "netlify/functions/serverless/serverless.js",
   "type": "module",
+  "engines": {
+    "node": "22.14"
+  },
   "scripts": {
     "start": "nodemon src/serverless.js",
     "dev": "netlify dev",
