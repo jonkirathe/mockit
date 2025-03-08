@@ -12,8 +12,19 @@ export const authLimiter = rateLimit({
 });
 
 export const apiLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 100,
+    windowMs: 60 * 60 * 1000, //60 minute
+    max: 100,  // 100 requests per 60 minute
+    handler: (req, res) => {
+        res.status(429).json({
+            error: "Too many requests",
+            code: "rate_limit_exceeded"
+        });
+    }
+});
+
+export const healthCheckLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 60, // 60 requests per minute
     handler: (req, res) => {
         res.status(429).json({
             error: "Too many requests",

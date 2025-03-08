@@ -63,7 +63,10 @@ router.post("/signin", validateCsrfToken, authLimiter, (req, res) => {
             });
         }
 
-        const { accessToken, refreshToken, cookieOptions } = generateTokens(user);
+        const userAgent = req.get("User-Agent") || "unknown";
+        const clientIP = req.ip;
+        const { accessToken, refreshToken, cookieOptions } = generateTokens(user, { userAgent, clientIP });
+
         res.cookie("accessToken", accessToken, cookieOptions);
         res.cookie("refreshToken", refreshToken, {
             ...cookieOptions,
@@ -127,7 +130,10 @@ router.post("/signup", validateCsrfToken, authLimiter, (req, res) => {
     };
 
     users.push(newUser);
-    const { accessToken, refreshToken, cookieOptions } = generateTokens(newUser);
+
+    const userAgent = req.get("User-Agent") || "unknown";
+    const clientIP = req.ip;
+    const { accessToken, refreshToken, cookieOptions } = generateTokens(newUser, { userAgent, clientIP });
 
     res.cookie("accessToken", accessToken, cookieOptions);
     res.cookie("refreshToken", refreshToken, {
