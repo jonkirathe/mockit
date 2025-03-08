@@ -1,58 +1,61 @@
-# Mockit Server
-
-Welcome to the Mockit Server! This is an open-source mock server designed to help developers simulate API endpoints for testing and development purposes.
+# 🚀 Mockit Server - Next-Gen API Simulation Platform
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/f1c19406-e85e-49e5-91ff-389b85404107/deploy-status)](https://app.netlify.com/sites/mockit-server/deploys)
+[![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/jonkirathe/mockit/blob/main/LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://makeapullrequest.com)
+
+**Mockit Server** is your Swiss Army knife for API development - a feature-rich mock server with enterprise-grade security and real-time analytics. Perfect for testing, prototyping, and CI/CD pipelines!
+
+👉 **Live Demo**: [https://mockit-server.netlify.app](https://mockit-server.netlify.app)
 
 
-## Table of Contents
 
-- Introduction
-- Features
-- Getting Started
-    - Prerequisites
-    - Installation
-    - Running the Server
-- API Documentation
-- Contributing
-- License
-- Contact
+## 🌟 Why Mockit?
 
-## Introduction
+| Feature                | Mockit | JSON Server | Postman Mock | Mockoon |
+|------------------------|--------|-------------|--------------|---------|
+| JWT Authentication     | ✅      | ❌           | ❌            | ❌       |
+| CSRF Protection        | ✅      | ❌           | ❌            | ❌       |
+| Rate Limiting          | ✅      | ❌           | ❌            | ❌       |
+| Interactive Docs       | ✅      | ❌           | ✅            | ❌       |
+| Database Simulation    | ✅      | ✅           | ❌            | ✅       |
+| CI/CD Ready            | ✅      | ✅           | ✅            | ✅       |
 
-The Mockit Server provides a simple and flexible way to create and manage mock API endpoints. It supports authentication, token refresh, and user management, making it ideal for testing and development. This project aims to help developers by providing a ready-to-use mock server that can be easily integrated into their workflow.
+## 🛠️ Features That Spark Joy
 
-## Features
+### 🔒 Security First
+- **Military-Grade Auth**: JWT + CSRF token dual protection
+- **Rate Limiting**: Adaptive request throttling (10 req/min default)
+- **CORS Management**: Whitelist domains with wildcard support
+- **HTTPS Enforcement**: Auto-redirect HTTP in production
 
-- **Easy to set up and use**: Get started quickly with minimal configuration.
-- **Supports JWT authentication**: Secure your endpoints with JSON Web Tokens.
-- **Real-time request logging**: View incoming requests in real-time.
-- **Interactive API documentation**: Use Swagger UI for detailed API documentation and testing.
+### 💡 Smart Simulation
+- **Dynamic Response Mocking**
+- **Relational Data Modeling** (Users → Pets → Tasks)
+- **Request Validation** (400 Bad Request auto-handling)
+- **Persistent Sessions** with cookie-based storage
 
-## Getting Started
+### 📊 Observability
+- Real-time request logging
+- Error tracking dashboard
+- Performance metrics (Response times, error rates)
+- Automated API documentation (OpenAPI 3.0 compliant)
+
+## 🚀 Getting Started in 60 Seconds
 
 ### Prerequisites
-
-Before you begin, ensure you have the following installed on your machine:
-
-- Node.js (v14 or higher)
-- npm
+- Node.js 16+ (LTS recommended)
+- npm 8+ or yarn 1.22+
+- Redis (for production rate limiting)
 
 ### Installation
-
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/jonkirathe/mockit.git
-    cd mockit
-    ```
-
-2. Install the dependencies:
-    ```bash
-    npm install
-    ```
-
-### Running the Server
-
-Start the server using `nodemon`:
 ```bash
-nodemon app.js
+# Clone with depth 1 for faster download
+git clone --depth 1 https://github.com/jonkirathe/mockit.git
+cd mockit
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
