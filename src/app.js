@@ -1,17 +1,14 @@
-import express, { Router } from "express";
+import express, {Router} from "express";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
-import cors from "cors";
-import session from "express-session";
 import dotenv from "dotenv";
-import { PORT, ALLOWED_ORIGINS } from "./config/constants.js";
-import { setupHelmet } from "./config/security.js";
-import { apiLimiter } from "./config/rate-limits.js";
+import {PORT} from "./config/constants.js";
+import {setupHelmet} from "./config/security.js";
+import {apiLimiter} from "./config/rate-limits.js";
 import authRoutes from "./routes/auth.js";
 import petRoutes from "./routes/pets.js";
 import taskRoutes from "./routes/tasks.js";
 import userRoutes from "./routes/users.js";
-import { generateCsrfToken } from "./utils/csrf.js";
 
 dotenv.config();
 
@@ -25,6 +22,7 @@ api.use(express.json());
 api.use(express.urlencoded({ extended: true }));
 api.use(cookieParser());
 api.use(morgan("combined"));
+/*
 
 // CORS configuration: allow all origins in development; in production, enforce HTTPS
 api.use(
@@ -59,6 +57,7 @@ api.use((req, res, next) => {
     }
     next();
 });
+*/
 
 // Mount routes under /api
 const router = Router();
@@ -74,6 +73,12 @@ router.get("/health", (req, res) => {
 router.use(apiLimiter);
 
 api.use("/api", router);
+
+console.log("authRoutes type:", typeof authRoutes);
+console.log("petRoutes type:", typeof petRoutes);
+console.log("taskRoutes type:", typeof taskRoutes);
+console.log("userRoutes type:", typeof userRoutes);
+console.log("apiLimiter type:", typeof apiLimiter);
 
 // Serve static files
 api.use(express.static("public"));
