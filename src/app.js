@@ -19,7 +19,7 @@ const api = express();
 api.set("port", PORT);
 
 // Security headers
-setupHelmet(api);
+// setupHelmet(api);
 
 api.use(express.json());
 api.use(express.urlencoded({ extended: true }));
@@ -46,7 +46,7 @@ api.use(
         resave: false,
         saveUninitialized: true,
         cookie: {
-            secure: false,
+            secure: process.env.NODE_ENV === "production",
             sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax"
         }
     })
