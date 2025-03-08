@@ -3,12 +3,14 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import {PORT} from "./config/constants.js";
-import {setupHelmet} from "./config/security.js";
-import {apiLimiter} from "./config/rate-limits.js";
+// import {setupHelmet} from "./config/security.js";
+// import {apiLimiter} from "./config/rate-limits.js";
 import authRoutes from "./routes/auth.js";
 import petRoutes from "./routes/pets.js";
 import taskRoutes from "./routes/tasks.js";
 import userRoutes from "./routes/users.js";
+import * as rateLimits from "./config/rate-limits.js";
+const { apiLimiter } = rateLimits;
 
 dotenv.config();
 
