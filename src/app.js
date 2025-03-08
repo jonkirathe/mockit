@@ -82,10 +82,10 @@ api.use("/api", router);
 api.use(express.static("public"));
 
 // Only call listen when running locally (not in serverless)
-if (require.main === module) {
-    api.listen(PORT, () => {
-        console.log("Server listening on port: " + PORT);
-    });
-}
+// if (require.main === module) {
+//     api.listen(PORT, () => {
+//         console.log("Server listening on port: " + PORT);
+//     });
+// }
 
 export default api;
