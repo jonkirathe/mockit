@@ -5,12 +5,8 @@ import dotenv from "dotenv";
 import {PORT} from "./config/constants.js";
 // import {setupHelmet} from "./config/security.js";
 // import {apiLimiter} from "./config/rate-limits.js";
-import authRoutes from "./routes/auth.js";
-import petRoutes from "./routes/pets.js";
-import taskRoutes from "./routes/tasks.js";
-import userRoutes from "./routes/users.js";
-import * as rateLimits from "./config/rate-limits.js";
-const { apiLimiter } = rateLimits;
+// import * as rateLimits from "./config/rate-limits.js";
+// const { apiLimiter } = rateLimits;
 
 dotenv.config();
 
@@ -63,24 +59,24 @@ api.use((req, res, next) => {
 
 // Mount routes under /api
 const router = Router();
-router.use("/auth", authRoutes);
-router.use("/pets", petRoutes);
-router.use("/tasks", taskRoutes);
-router.use("/users", userRoutes);
+// router.use("/auth", authRoutes);
+// router.use("/pets", petRoutes);
+// router.use("/tasks", taskRoutes);
+// router.use("/users", userRoutes);
 
 router.get("/health", (req, res) => {
     res.status(200).json({message: "Health Ok"});
 });
 
-router.use(apiLimiter);
+// router.use(apiLimiter);
 
 api.use("/api", router);
 
-console.log("authRoutes type:", typeof authRoutes);
-console.log("petRoutes type:", typeof petRoutes);
-console.log("taskRoutes type:", typeof taskRoutes);
-console.log("userRoutes type:", typeof userRoutes);
-console.log("apiLimiter type:", typeof apiLimiter);
+// console.log("authRoutes type:", typeof authRoutes);
+// console.log("petRoutes type:", typeof petRoutes);
+// console.log("taskRoutes type:", typeof taskRoutes);
+// console.log("userRoutes type:", typeof userRoutes);
+// console.log("apiLimiter type:", typeof apiLimiter);
 
 // Serve static files
 api.use(express.static("public"));
