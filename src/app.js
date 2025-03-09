@@ -32,9 +32,9 @@ api.use(
     cors({
         origin: (origin, callback) => {
             // Allow all origins but require HTTPS in production
-            if (process.env.NODE_ENV === "production" && origin && !origin.startsWith("https://")) {
-                return callback(new Error("HTTPS required"));
-            }
+            // if (process.env.NODE_ENV === "production" && origin && !origin.startsWith("https://")) {
+            //     return callback(new Error("HTTPS required"));
+            // }
             callback(null, true);
         },
         credentials: true,

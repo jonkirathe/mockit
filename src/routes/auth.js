@@ -278,4 +278,21 @@ router.post("/refresh", validateCsrfToken, authLimiter, async (req, res) => {
     }
 });
 
+router.get("/validate-session",validateCsrfToken, async (req, res) => {
+    try {
+        const accessToken = req.cookies.accessToken;
+        if (!accessToken) return res.json({ authenticated: false });
+
+        const decoded = jwt.verify(accessToken, process.env.SECRET_KEY);
+        const user = await users.find((u) => u.id === decoded.id);
+
+        res.json({
+            authenticated: !!user,
+            needsRefresh: Date.now() > decoded.exp * 1000 - 300000 // 5 min buffer
+        });
+    } catch (error) {
+        res.json({ valid: false });
+    }
+});
+
 export default router;
