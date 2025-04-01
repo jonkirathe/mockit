@@ -83,7 +83,7 @@ api.use(cors({
 api.use(session({
     secret: process.env.SESSION_SECRET,
     cookie: {
-        secure: true, // REQUIRED for HTTPS
+        secure: false, // REQUIRED for HTTPS
         sameSite: 'None', // Allow cross-site cookies
         httpOnly: true,
         domain: '.netlify.app', // Wildcard for all Netlify subdomains
