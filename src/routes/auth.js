@@ -41,7 +41,7 @@ router.get('/csrf-token', async (req, res) => {
         }
 
         res.cookie('XSRF-TOKEN', req.session.csrfToken, {
-            httpOnly: true,
+            httpOnly: false,
             secure: false, // true in production
             // sameSite: 'Lax',
             sameSite: 'none',
