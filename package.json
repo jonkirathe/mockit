@@ -2,7 +2,7 @@
   "name": "mockit",
   "version": "1.0.0",
   "main": "netlify/functions/serverless/serverless.js",
-  "type": "module",
+  "type": "commonjs",
   "engines": {
     "node": "22.14"
   },
