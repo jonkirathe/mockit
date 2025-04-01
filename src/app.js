@@ -4,7 +4,7 @@ import morgan from "morgan";
 import cors from "cors";
 import session from "express-session";
 import dotenv from "dotenv";
-import {PORT} from "./config/constants.js";
+import {ALLOWED_ORIGINS, PORT} from "./config/constants.js";
 import {setupHelmet} from "./config/security.js";
 import {apiLimiter, healthCheckLimiter} from "./config/rate-limits.js";
 import authRoutes from "./routes/auth.js";
@@ -27,19 +27,26 @@ api.use(cookieParser());
 api.use(morgan("combined"));
 // api.use(blockClientTools);
 // CORS configuration: allow all origins in development; in production, enforce HTTPS
-api.use(
-    cors({
-        origin: (origin, callback) => {
-            // Allow all origins but require HTTPS in production
-            // if (process.env.NODE_ENV === "production" && origin && !origin.startsWith("https://")) {
-            //     return callback(new Error("HTTPS required"));
-            // }
-            callback(null, true);
-        },
-        credentials: true,
-        optionsSuccessStatus: 200
-    })
-);
+// api.use(
+//     cors({
+//         origin: (origin, callback) => {
+//             // Allow all origins but require HTTPS in production
+//             // if (process.env.NODE_ENV === "production" && origin && !origin.startsWith("https://")) {
+//             //     return callback(new Error("HTTPS required"));
+//             // }
+//             callback(null, true);
+//         },
+//         credentials: true,
+//         optionsSuccessStatus: 200
+//     })
+// );
+api.use(cors({
+    origin: (origin, callback) => {
+        callback(null, true);
+    },
+    credentials: true, // Required for cookies
+    exposedHeaders: ['XSRF-TOKEN'] // Allow Angular to read the CSRF token
+}));
 // ALL ONLY SPECIFIED domain to connect
 /*api.use(
     cors({
@@ -69,19 +76,21 @@ api.use(
             }
         },
         credentials: true,
-        optionsSuccessStatus: 200
+        optionsSuccessStatus: 200,
+        exposedHeaders: ['XSRF-TOKEN']
     })
 );*/
 api.use(session({
     secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
     cookie: {
-        secure: false, // Use true in production (HTTPS)
-        sameSite: 'Lax', // Allows sending cookie on top-level navigation
+        secure: true, // REQUIRED for HTTPS
+        sameSite: 'None', // Allow cross-site cookies
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // Session expiration
-    }
+        domain: '.netlify.app', // Wildcard for all Netlify subdomains
+        maxAge: 24 * 60 * 60 * 1000 // 1 day
+    },
+    resave: false,
+    saveUninitialized: false
 }));
 
 // Mount routes under /api
