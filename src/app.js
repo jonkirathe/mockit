@@ -84,7 +84,7 @@ api.use(session({
     secret: process.env.SESSION_SECRET,
     cookie: {
         secure: false, // REQUIRED for HTTPS
-        sameSite: 'None', // Allow cross-site cookies
+        sameSite: 'none', // Allow cross-site cookies
         httpOnly: true,
         domain: '.netlify.app', // Wildcard for all Netlify subdomains
         maxAge: 24 * 60 * 60 * 1000 // 1 day
