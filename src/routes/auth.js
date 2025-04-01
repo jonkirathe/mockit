@@ -1,11 +1,11 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { validateCsrfToken } from "../middleware/validation.js";
-import { validateAccessToken, logout } from "../middleware/auth.js";
-import { authLimiter } from "../middleware/rateLimiter.js";
-import { generateTokens } from "../utils/tokens.js";
-import { generateCsrfToken } from "../utils/csrf.js";
+import {validateCsrfToken} from "../middleware/validation.js";
+import {logout, validateAccessToken} from "../middleware/auth.js";
+import {authLimiter} from "../config/rate-limits.js";
+import {generateTokens} from "../utils/tokens.js";
+import {generateCsrfToken} from "../utils/csrf.js";
 
 const router = express.Router();
 
@@ -31,20 +31,26 @@ const users = [
     }
 ];
 
-router.get("/csrf-token", (req, res) => {
+router.get('/csrf-token', async (req, res) => {
     try {
+        // Generate token only if not present
         if (!req.session.csrfToken) {
             req.session.csrfToken = generateCsrfToken();
+            // Save session explicitly
+            await req.session.save();
         }
-        res.json({
-            csrfToken: req.session.csrfToken,
-            expires: new Date(Date.now() + 3600000) // 1 hour
+
+        res.cookie('XSRF-TOKEN', req.session.csrfToken, {
+            httpOnly: true,
+            secure: false, // true in production
+            sameSite: 'Lax',
+            maxAge: 900000
         });
+
+        res.json({ csrfToken: req.session.csrfToken });
     } catch (error) {
-        res.status(500).json({
-            error: "CSRF token generation failed",
-            code: "csrf_failure"
-        });
+        console.error('CSRF Error:', error);
+        res.status(500).json({ error: "CSRF failure", code: "csrf_failure" });
     }
 });
 

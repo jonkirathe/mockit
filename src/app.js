@@ -4,14 +4,13 @@ import morgan from "morgan";
 import cors from "cors";
 import session from "express-session";
 import dotenv from "dotenv";
-import {ALLOWED_ORIGINS, PORT} from "./config/constants.js";
+import {PORT} from "./config/constants.js";
 import {setupHelmet} from "./config/security.js";
 import {apiLimiter, healthCheckLimiter} from "./config/rate-limits.js";
 import authRoutes from "./routes/auth.js";
 import petRoutes from "./routes/pets.js";
 import taskRoutes from "./routes/tasks.js";
 import userRoutes from "./routes/users.js";
-import {generateCsrfToken} from "./utils/csrf.js";
 import {errorHandler} from "./middleware/errorHandler.js";
 
 dotenv.config();
@@ -73,25 +72,17 @@ api.use(
         optionsSuccessStatus: 200
     })
 );*/
-api.use(
-    session({
-        secret: process.env.SECRET_KEY,
-        resave: false,
-        saveUninitialized: true,
-        cookie: {
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax"
-        }
-    })
-);
-
-// Initialize CSRF token if missing
-api.use((req, res, next) => {
-    if (!req.session.csrfToken) {
-        req.session.csrfToken = generateCsrfToken();
+api.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false, // Use true in production (HTTPS)
+        sameSite: 'Lax', // Allows sending cookie on top-level navigation
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // Session expiration
     }
-    next();
-});
+}));
 
 // Mount routes under /api
 const router = Router();
