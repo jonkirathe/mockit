@@ -18,7 +18,7 @@ export const validateCsrfToken = (req, res, next) => {
         });
     }
 
-    console.log('Comparing tokens - Header:', csrfToken, 'Session:', req.session.csrfToken);
+    console.log('Comparing tokens <-> Header:', csrfToken, 'Session:', req.session.csrfToken);
 
     if (!crypto.timingSafeEqual(
         Buffer.from(csrfToken),
