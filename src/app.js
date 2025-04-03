@@ -77,8 +77,8 @@ api.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false, // Use true in production (HTTPS)
-        sameSite: 'Lax', // Allows sending cookie on top-level navigation
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000 // Session expiration
     }
