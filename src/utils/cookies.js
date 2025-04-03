@@ -1,7 +1,6 @@
 export const cookieOptions = {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    // sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "Strict" : "Lax",
     expires: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
 };
