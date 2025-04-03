@@ -17,7 +17,6 @@ export const validateCsrfToken = (req, res, next) => {
             code: "security_validation_error"
         });
     }
-
     console.log('Comparing tokens <-> Header:', csrfToken, 'Session:', req.session.csrfToken);
 
     if (!crypto.timingSafeEqual(
