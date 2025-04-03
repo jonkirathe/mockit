@@ -40,7 +40,7 @@ api.use(
         optionsSuccessStatus: 200
     })
 );
-
+// ALL ONLY SPECIFIED domain to connect
 /*api.use(
     cors({
         origin: (origin, callback) => {
